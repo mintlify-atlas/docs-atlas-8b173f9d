@@ -1,0 +1,99 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "MT5 Manager API SDK",
+  "projectDescription": "PHP SDK for managing MetaTrader 5 accounts, users, trades, and positions via REST API",
+  "theme": "aspen",
+  "primaryColor": "#2563eb",
+  "lightColor": "#3b82f6",
+  "darkColor": "#1e40af",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "core-concepts/authentication",
+              "core-concepts/configuration",
+              "core-concepts/error-handling"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/user-management",
+              "guides/account-operations",
+              "guides/trading-operations",
+              "guides/groups-and-symbols"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "API Classes",
+            "pages": [
+              "api-reference/basic-api",
+              "api-reference/user-api",
+              "api-reference/account-api",
+              "api-reference/trade-api",
+              "api-reference/group-api",
+              "api-reference/symbol-api"
+            ]
+          },
+          {
+            "group": "Models",
+            "pages": [
+              "api-reference/models/user",
+              "api-reference/models/account",
+              "api-reference/models/position",
+              "api-reference/models/order",
+              "api-reference/models/deal",
+              "api-reference/models/group",
+              "api-reference/models/symbol"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "User account creation and management",
+    "Balance deposits and withdrawals",
+    "Trading position and order management",
+    "Group and symbol configuration",
+    "Bearer token authentication",
+    "Comprehensive error handling"
+  ],
+  "publicApiSurface": [
+    "D4T\\MT5Sdk\\MT5Manager\\BasicApi::initGet()",
+    "D4T\\MT5Sdk\\MT5Manager\\BasicApi::pingGet()",
+    "D4T\\MT5Sdk\\MT5Manager\\UserApi::userAddPost()",
+    "D4T\\MT5Sdk\\MT5Manager\\UserApi::updateUser()",
+    "D4T\\MT5Sdk\\MT5Manager\\UserApi::userDepositPost()",
+    "D4T\\MT5Sdk\\MT5Manager\\UserApi::userWithdrawPost()",
+    "D4T\\MT5Sdk\\MT5Manager\\UserApi::userResetPwdPost()",
+    "D4T\\MT5Sdk\\MT5Manager\\UserApi::userUserLoginGet()",
+    "D4T\\MT5Sdk\\MT5Manager\\UserApi::userUserLoginDelete()",
+    "D4T\\MT5Sdk\\MT5Manager\\UserApi::usersGroupGet()",
+    "D4T\\MT5Sdk\\MT5Manager\\AccountApi::accountLoginGet()",
+    "D4T\\MT5Sdk\\MT5Manager\\TradeApi::positionsUserLoginGet()",
+    "D4T\\MT5Sdk\\MT5Manager\\TradeApi::ordersUserLoginGet()",
+    "D4T\\MT5Sdk\\MT5Manager\\TradeApi::dealsUserLoginGet()",
+    "D4T\\MT5Sdk\\MT5Manager\\TradeApi::closeAllUserLoginDelete()",
+    "D4T\\MT5Sdk\\MT5Manager\\GroupApi::groupsGet()",
+    "D4T\\MT5Sdk\\MT5Manager\\GroupApi::groupGroupNameGet()",
+    "D4T\\MT5Sdk\\MT5Manager\\SymbolApi::symbolsGet()"
+  ]
+}
