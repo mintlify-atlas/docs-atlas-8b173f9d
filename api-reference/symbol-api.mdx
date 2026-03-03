@@ -1,0 +1,379 @@
+---
+title: Symbol API
+description: Retrieve market symbols and trading instrument information from MetaTrader 5
+---
+
+The Symbol API provides methods for retrieving information about available trading symbols (instruments) on your MetaTrader 5 server, including currency pairs, commodities, indices, and other tradable assets.
+
+<Note>
+All Symbol API methods require authentication via Bearer token. Obtain a token using the [Basic API](/api-reference/basic-api) `initGet()` method.
+</Note>
+
+## Methods
+
+### Get all symbols
+
+<CodeGroup>
+```php PHP
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+// Configure Bearer authorization
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\SymbolApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+try {
+    $symbols = $apiInstance->symbolsGet();
+    
+    echo "Available Symbols: " . count($symbols) . "\n\n";
+    
+    foreach ($symbols as $symbol) {
+        echo "Symbol: " . $symbol->getSymbol() . "\n";
+        echo "  Description: " . $symbol->getDescription() . "\n";
+        echo "  Bid: " . $symbol->getBid() . "\n";
+        echo "  Ask: " . $symbol->getAsk() . "\n";
+        echo "  Spread: " . $symbol->getSpread() . "\n";
+        echo "  Digits: " . $symbol->getDigits() . "\n";
+        echo "  Contract Size: " . $symbol->getContractSize() . "\n";
+        echo "\n";
+    }
+} catch (Exception $e) {
+    echo 'Exception when calling SymbolApi->symbolsGet: ';
+    echo $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Retrieves a complete list of all trading symbols available on the MetaTrader 5 server, including their current market prices and specifications.
+
+**HTTP Method:** `GET`
+
+**Endpoint:** `/symbols/`
+
+**Authentication:** Required (Bearer token)
+
+#### Parameters
+
+This endpoint does not require any parameters.
+
+#### Returns
+
+**Type:** `Symbol[]`
+
+Returns an array of symbol objects with comprehensive trading information.
+
+<ResponseField name="symbol" type="string">
+  Symbol name/ticker
+  
+  Examples: `"EURUSD"`, `"GBPJPY"`, `"XAUUSD"`, `"US30"`
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Human-readable symbol description
+  
+  Examples: `"Euro vs US Dollar"`, `"Gold vs US Dollar"`
+</ResponseField>
+
+<ResponseField name="path" type="string">
+  Symbol category path
+  
+  Examples: `"Forex\\Majors"`, `"Metals"`, `"Indices"`
+</ResponseField>
+
+<ResponseField name="currency_base" type="string">
+  Base currency of the symbol
+  
+  Example: `"EUR"` for EURUSD
+</ResponseField>
+
+<ResponseField name="currency_profit" type="string">
+  Profit currency (quote currency)
+  
+  Example: `"USD"` for EURUSD
+</ResponseField>
+
+<ResponseField name="currency_margin" type="string">
+  Margin calculation currency
+</ResponseField>
+
+<ResponseField name="digits" type="integer">
+  Number of decimal places in price quotes
+  
+  Example: `5` for most forex pairs (0.00001 precision)
+</ResponseField>
+
+<ResponseField name="contract_size" type="float">
+  Contract size for one lot
+  
+  Example: `100000` for standard forex lot
+</ResponseField>
+
+<ResponseField name="bid" type="float">
+  Current bid price (sell price)
+</ResponseField>
+
+<ResponseField name="ask" type="float">
+  Current ask price (buy price)
+</ResponseField>
+
+<ResponseField name="spread" type="integer">
+  Current spread in points
+  
+  Calculated as: (Ask - Bid) / Point
+</ResponseField>
+
+<ResponseField name="volume_min" type="float">
+  Minimum trade volume allowed
+  
+  Example: `0.01` for micro lots
+</ResponseField>
+
+<ResponseField name="volume_max" type="float">
+  Maximum trade volume allowed
+</ResponseField>
+
+<ResponseField name="volume_step" type="float">
+  Volume step size
+  
+  Example: `0.01` means trades must be in increments of 0.01 lots
+</ResponseField>
+
+<ResponseField name="tick_size" type="float">
+  Minimum price change
+</ResponseField>
+
+<ResponseField name="tick_value" type="float">
+  Value of one tick in account currency
+</ResponseField>
+
+<ResponseField name="trade_mode" type="integer">
+  Trading mode
+  
+  - `0` - Disabled
+  - `1` - Close Only
+  - `2` - Full Access
+</ResponseField>
+
+<ResponseField name="swap_long" type="float">
+  Swap rate for long positions (per lot per day)
+</ResponseField>
+
+<ResponseField name="swap_short" type="float">
+  Swap rate for short positions (per lot per day)
+</ResponseField>
+
+<ResponseField name="swap_mode" type="integer">
+  Swap calculation mode
+  
+  - `0` - Points
+  - `1` - Currency
+  - `2` - Interest
+  - `3` - Margin Currency
+</ResponseField>
+
+## Use cases
+
+### List all available forex pairs
+
+```php
+$symbols = $apiInstance->symbolsGet();
+
+echo "Forex Symbols:\n";
+foreach ($symbols as $symbol) {
+    if (strpos($symbol->getPath(), 'Forex') !== false) {
+        echo $symbol->getSymbol() . " - " . $symbol->getDescription() . "\n";
+    }
+}
+```
+
+### Find symbols with low spreads
+
+```php
+$symbols = $apiInstance->symbolsGet();
+
+echo "Symbols with spread < 10 points:\n";
+foreach ($symbols as $symbol) {
+    if ($symbol->getSpread() < 10) {
+        echo $symbol->getSymbol();
+        echo " | Bid: " . $symbol->getBid();
+        echo " | Ask: " . $symbol->getAsk();
+        echo " | Spread: " . $symbol->getSpread() . " points\n";
+    }
+}
+```
+
+### Calculate trading costs
+
+```php
+$symbols = $apiInstance->symbolsGet();
+$symbolName = "EURUSD";
+
+foreach ($symbols as $symbol) {
+    if ($symbol->getSymbol() === $symbolName) {
+        $lots = 1.0;
+        $spreadCost = $symbol->getSpread() * $symbol->getTickValue() * $lots;
+        
+        echo "Trading " . $lots . " lot of " . $symbolName . ":\n";
+        echo "Spread cost: $" . number_format($spreadCost, 2) . "\n";
+        echo "Overnight long swap: $" . $symbol->getSwapLong() . "\n";
+        echo "Overnight short swap: $" . $symbol->getSwapShort() . "\n";
+        break;
+    }
+}
+```
+
+### Validate symbol specifications
+
+```php
+$symbols = $apiInstance->symbolsGet();
+$symbolName = "XAUUSD";
+
+foreach ($symbols as $symbol) {
+    if ($symbol->getSymbol() === $symbolName) {
+        echo "Symbol Specifications for " . $symbolName . ":\n";
+        echo "Contract Size: " . $symbol->getContractSize() . "\n";
+        echo "Min Volume: " . $symbol->getVolumeMin() . " lots\n";
+        echo "Max Volume: " . $symbol->getVolumeMax() . " lots\n";
+        echo "Volume Step: " . $symbol->getVolumeStep() . " lots\n";
+        echo "Digits: " . $symbol->getDigits() . "\n";
+        
+        $tradeMode = $symbol->getTradeMode();
+        switch ($tradeMode) {
+            case 0:
+                echo "Trading: DISABLED\n";
+                break;
+            case 1:
+                echo "Trading: CLOSE ONLY\n";
+                break;
+            case 2:
+                echo "Trading: FULL ACCESS\n";
+                break;
+        }
+        break;
+    }
+}
+```
+
+### Group symbols by category
+
+```php
+$symbols = $apiInstance->symbolsGet();
+$categories = [];
+
+foreach ($symbols as $symbol) {
+    $path = $symbol->getPath();
+    if (!isset($categories[$path])) {
+        $categories[$path] = [];
+    }
+    $categories[$path][] = $symbol->getSymbol();
+}
+
+echo "Symbols by Category:\n";
+foreach ($categories as $category => $symbolList) {
+    echo "\n" . $category . " (" . count($symbolList) . "):\n";
+    echo "  " . implode(", ", $symbolList) . "\n";
+}
+```
+
+### Monitor market prices
+
+```php
+while (true) {
+    $symbols = $apiInstance->symbolsGet();
+    
+    $watchlist = ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD'];
+    
+    echo "\n" . date('Y-m-d H:i:s') . "\n";
+    foreach ($symbols as $symbol) {
+        if (in_array($symbol->getSymbol(), $watchlist)) {
+            echo $symbol->getSymbol() . ": ";
+            echo "Bid " . $symbol->getBid() . " / ";
+            echo "Ask " . $symbol->getAsk() . "\n";
+        }
+    }
+    
+    sleep(5); // Update every 5 seconds
+}
+```
+
+## Async method
+
+For non-blocking operations, use the asynchronous version:
+
+```php
+$promise = $apiInstance->symbolsGetAsync();
+
+$promise->then(
+    function ($symbols) {
+        echo "Retrieved " . count($symbols) . " symbols\n";
+        
+        foreach ($symbols as $symbol) {
+            // Process symbols
+        }
+    },
+    function ($exception) {
+        echo "Error: " . $exception->getMessage();
+    }
+);
+```
+
+The async method returns a GuzzleHttp Promise that can be chained or used with other promises.
+
+## Error responses
+
+<ResponseField name="400" type="Bad Request">
+  Invalid request format
+</ResponseField>
+
+<ResponseField name="401" type="Unauthorized">
+  Missing or invalid authentication token
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Server error while retrieving symbols
+</ResponseField>
+
+## Best practices
+
+1. **Cache symbol data**: Symbol specifications rarely change, so cache the results to reduce API calls
+2. **Filter by category**: Use the path field to filter symbols by asset class
+3. **Check trade mode**: Always verify a symbol allows trading before attempting to place orders
+4. **Volume validation**: Ensure trade volumes comply with minimum, maximum, and step size requirements
+5. **Spread monitoring**: Track spreads to optimize trade entry timing
+6. **Regular updates**: Refresh symbol data periodically to get current prices and spreads
+7. **Swap awareness**: Consider overnight swap costs when holding positions
+
+<Tip>
+Symbol data includes real-time bid/ask prices, making this endpoint useful for displaying live quotes to users.
+</Tip>
+
+<Warning>
+Prices returned by this endpoint are indicative. For actual trade execution, always use the latest quotes from the trading platform.
+</Warning>
+
+## Symbol categories
+
+Common symbol categories you may encounter:
+
+- **Forex/Majors**: Major currency pairs (EURUSD, GBPUSD, etc.)
+- **Forex/Minors**: Minor currency pairs
+- **Forex/Exotics**: Exotic currency pairs
+- **Metals**: Precious metals (XAUUSD, XAGUSD)
+- **Indices**: Stock indices (US30, UK100, etc.)
+- **Commodities**: Oil, gas, agricultural products
+- **Crypto**: Cryptocurrencies (BTCUSD, ETHUSD)
+- **Stocks**: Individual company stocks
+- **CFDs**: Contracts for difference
+
+## Related APIs
+
+- [Trade API](/api-reference/trade-api) - Place trades using symbol names
+- [Group API](/api-reference/group-api) - View group-specific symbol permissions
+- [Account API](/api-reference/account-api) - Monitor trading account performance
+- [Basic API](/api-reference/basic-api) - Initialize connection and authenticate

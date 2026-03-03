@@ -1,0 +1,192 @@
+---
+title: Basic API
+description: Core API methods for initializing the MT5 Manager connection and testing API availability
+---
+
+The Basic API class provides essential methods for establishing and testing connections to the MetaTrader 5 server. You must call the `initGet()` method first to obtain an authentication token before using other API endpoints.
+
+## Authentication
+
+Most methods in this SDK require authentication via Bearer token. The token is obtained by calling the `initGet()` method with your MT5 manager credentials.
+
+## Methods
+
+### Initialize manager connection
+
+<CodeGroup>
+```php PHP
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\BasicApi(
+    new GuzzleHttp\Client()
+);
+
+$server = "127.0.0.1:443";
+$login = "your_manager_login";
+$password = "your_manager_password";
+$timeout = 5000; // Optional timeout in milliseconds
+
+try {
+    $result = $apiInstance->initGet($server, $login, $password, $timeout);
+    $token = $result->getToken();
+    echo "Authentication successful. Token: " . $token;
+} catch (Exception $e) {
+    echo 'Exception: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Establishes a connection to the MetaTrader 5 server and returns an authentication token required for subsequent API calls.
+
+**HTTP Method:** `GET`
+
+**Endpoint:** `/init/`
+
+#### Parameters
+
+<ParamField path="server" type="string" required>
+  MetaTrader 5 server IP address with port
+  
+  Example: `127.0.0.1:443`
+</ParamField>
+
+<ParamField path="login" type="string" required>
+  MetaTrader manager account login identifier
+</ParamField>
+
+<ParamField path="password" type="string" required>
+  MetaTrader manager account password
+</ParamField>
+
+<ParamField path="timeout" type="float">
+  Connection timeout in milliseconds
+  
+  Default: System default timeout
+</ParamField>
+
+#### Returns
+
+**Type:** `InitReturnType`
+
+Returns an object containing the authentication token and connection details.
+
+<ResponseField name="token" type="string">
+  Bearer token for authenticating subsequent API requests
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Connection status indicator
+</ResponseField>
+
+#### Error responses
+
+- **400 Bad Request**: Invalid credentials or server address
+- **500 Internal Server Error**: Server connection failed
+
+<Note>
+Store the returned token securely and use it in the `Authorization` header for all subsequent API calls: `Bearer YOUR_TOKEN`
+</Note>
+
+---
+
+### Ping API
+
+<CodeGroup>
+```php PHP
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\BasicApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+try {
+    $result = $apiInstance->pingGet();
+    echo "API is available. Response: ";
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Tests the availability and responsiveness of the API server. Use this method to verify your connection is active and the token is valid.
+
+**HTTP Method:** `GET`
+
+**Endpoint:** `/ping/`
+
+**Authentication:** Required (Bearer token)
+
+#### Parameters
+
+This endpoint does not require any parameters.
+
+#### Returns
+
+**Type:** `PingReturnType`
+
+<ResponseField name="status" type="string">
+  Server status response
+</ResponseField>
+
+<ResponseField name="timestamp" type="integer">
+  Server timestamp
+</ResponseField>
+
+#### Error responses
+
+- **400 Bad Request**: Invalid or expired token
+- **401 Unauthorized**: Missing authentication token
+
+<Tip>
+Use the ping method periodically to ensure your connection remains active and detect any authentication issues early.
+</Tip>
+
+## Async methods
+
+Both methods provide asynchronous versions for non-blocking operations:
+
+- `initGetAsync()` - Returns a promise for the initialization request
+- `pingGetAsync()` - Returns a promise for the ping request
+
+These methods use GuzzleHttp promises and are useful when you need to perform multiple operations concurrently.
+
+## Configuration
+
+### Constructor
+
+The BasicApi class accepts three optional parameters:
+
+<ParamField path="client" type="ClientInterface">
+  Custom Guzzle HTTP client instance
+  
+  Default: `new GuzzleHttp\Client()`
+</ParamField>
+
+<ParamField path="config" type="Configuration">
+  SDK configuration object
+  
+  Default: `new Configuration()`
+</ParamField>
+
+<ParamField path="selector" type="HeaderSelector">
+  Custom header selector
+  
+  Default: `new HeaderSelector()`
+</ParamField>
+
+## Best practices
+
+1. **Token management**: Store the authentication token securely and reuse it across multiple API calls
+2. **Error handling**: Always wrap API calls in try-catch blocks to handle connection errors gracefully
+3. **Connection testing**: Use the ping endpoint to verify connectivity before performing critical operations
+4. **Timeout configuration**: Set appropriate timeout values based on your network conditions
+5. **Async operations**: Use async methods when making multiple independent API calls to improve performance

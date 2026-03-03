@@ -1,0 +1,435 @@
+---
+title: Configuration
+description: Configure the MT5 Manager API SDK with custom settings for host, authentication, debugging, and HTTP client options
+---
+
+The `Configuration` class allows you to customize various aspects of the SDK including the API host, authentication tokens, HTTP client behavior, and debugging options.
+
+## Creating a configuration instance
+
+You can create a configuration instance in two ways:
+
+<CodeGroup>
+
+```php Using default configuration
+use D4T\MT5Sdk\Configuration;
+
+// Get the default singleton instance
+$config = Configuration::getDefaultConfiguration();
+
+// Configure settings
+$config->setHost('https://your-mt5-api.com/v1');
+$config->setAccessToken('your-token');
+```
+
+```php Creating a new instance
+use D4T\MT5Sdk\Configuration;
+
+// Create a new configuration instance
+$config = new Configuration();
+
+// Configure settings
+$config->setHost('https://your-mt5-api.com/v1');
+$config->setAccessToken('your-token');
+
+// Pass to API instance
+$userApi = new UserApi(new Client(), $config);
+```
+
+</CodeGroup>
+
+<Note>
+  Using `getDefaultConfiguration()` returns a singleton instance that is shared across your application. Create a new instance if you need multiple configurations.
+</Note>
+
+## Configuration options
+
+### Host configuration
+
+Set the base URL for the API server:
+
+```php
+$config = new Configuration();
+
+// Set the host (default: '/v1')
+$config->setHost('https://your-mt5-api.com/v1');
+
+// Get the configured host
+$host = $config->getHost();
+echo "API Host: {$host}\n";
+```
+
+<ParamField path="host" type="string" default="/v1">
+  The base URL for the MT5 Manager API. Include the full URL with protocol and API version.
+</ParamField>
+
+From `~/workspace/source/lib/Configuration.php:79-83`:
+
+```php
+/**
+ * The host
+ *
+ * @var string
+ */
+protected $host = '/v1';
+```
+
+### Authentication configuration
+
+Configure bearer token authentication for API requests:
+
+```php
+// Set access token for OAuth/Bearer authentication
+$config->setAccessToken('your-bearer-token');
+
+// Get the current access token
+$token = $config->getAccessToken();
+
+// The token is automatically added to requests as:
+// Authorization: Bearer {token}
+```
+
+The `setAccessToken()` method is defined in `~/workspace/source/lib/Configuration.php:180-184`:
+
+```php
+/**
+ * Sets the access token for OAuth
+ *
+ * @param string $accessToken Token for OAuth
+ *
+ * @return $this
+ */
+public function setAccessToken($accessToken)
+{
+    $this->accessToken = $accessToken;
+    return $this;
+}
+```
+
+<ParamField path="accessToken" type="string">
+  Bearer token obtained from the `/init/` endpoint. Required for all authenticated API requests.
+</ParamField>
+
+### User agent configuration
+
+Customize the User-Agent header sent with API requests:
+
+```php
+// Set custom user agent
+$config->setUserAgent('MyApp/1.0.0 PHP-MT5-SDK');
+
+// Get the current user agent
+$userAgent = $config->getUserAgent();
+echo "User Agent: {$userAgent}\n";
+```
+
+<ParamField path="userAgent" type="string" default="Swagger-Codegen/1.0.0/php">
+  User agent string for HTTP requests. Useful for tracking API usage by application.
+</ParamField>
+
+### API key configuration
+
+Configure API keys for endpoints that require them:
+
+```php
+// Set API key
+$config->setApiKey('X-API-KEY', 'your-api-key-value');
+
+// Set API key prefix (e.g., "Bearer", "Token")
+$config->setApiKeyPrefix('X-API-KEY', 'Token');
+
+// Get API key with prefix
+$keyWithPrefix = $config->getApiKeyWithPrefix('X-API-KEY');
+// Returns: "Token your-api-key-value"
+```
+
+From `~/workspace/source/lib/Configuration.php:411-427`:
+
+```php
+/**
+ * Get API key (with prefix if set)
+ *
+ * @param  string $apiKeyIdentifier name of apikey
+ *
+ * @return string API key with the prefix
+ */
+public function getApiKeyWithPrefix($apiKeyIdentifier)
+{
+    $prefix = $this->getApiKeyPrefix($apiKeyIdentifier);
+    $apiKey = $this->getApiKey($apiKeyIdentifier);
+
+    if ($apiKey === null) {
+        return null;
+    }
+
+    if ($prefix === null) {
+        $keyWithPrefix = $apiKey;
+    } else {
+        $keyWithPrefix = $prefix . ' ' . $apiKey;
+    }
+
+    return $keyWithPrefix;
+}
+```
+
+## Debugging configuration
+
+Enable debugging to troubleshoot API requests and responses:
+
+<Steps>
+  <Step title="Enable debug mode">
+    Turn on debug logging to capture HTTP request/response details.
+  </Step>
+  
+  <Step title="Configure debug file">
+    Specify where debug output should be written.
+  </Step>
+  
+  <Step title="Review debug output">
+    Examine the logged requests and responses to diagnose issues.
+  </Step>
+</Steps>
+
+```php
+$config = new Configuration();
+
+// Enable debug mode
+$config->setDebug(true);
+
+// Set debug output file (default: 'php://output')
+$config->setDebugFile('/tmp/mt5-api-debug.log');
+
+// Check if debug is enabled
+if ($config->getDebug()) {
+    echo "Debug mode is enabled\n";
+    echo "Debug file: " . $config->getDebugFile() . "\n";
+}
+```
+
+<Warning>
+  Debug mode logs sensitive information including credentials and tokens. Never enable debug mode in production, and ensure debug files are not publicly accessible.
+</Warning>
+
+### Debug output example
+
+When debug mode is enabled, you'll see detailed HTTP information:
+
+```text
+* About to connect() to your-mt5-api.com port 443 (#0)
+*   Trying 127.0.0.1...
+* Connected to your-mt5-api.com (127.0.0.1) port 443 (#0)
+> GET /v1/user/12345 HTTP/1.1
+Host: your-mt5-api.com
+User-Agent: MyApp/1.0.0 PHP-MT5-SDK
+Authorization: Bearer eyJhbGc...
+Accept: application/json
+
+< HTTP/1.1 200 OK
+< Content-Type: application/json
+< Content-Length: 1234
+{
+  "code": 0,
+  "user": {
+    "login": "12345",
+    ...
+  }
+}
+```
+
+## Temporary folder configuration
+
+Configure where temporary files are stored:
+
+```php
+// Set custom temp folder
+$config->setTempFolderPath('/var/tmp/mt5-sdk');
+
+// Get temp folder path (default: system temp directory)
+$tempPath = $config->getTempFolderPath();
+echo "Temp folder: {$tempPath}\n";
+```
+
+From `~/workspace/source/lib/Configuration.php:116-119`:
+
+```php
+public function __construct()
+{
+    $this->tempFolderPath = sys_get_temp_dir();
+}
+```
+
+<ParamField path="tempFolderPath" type="string">
+  Directory for storing temporary files. Defaults to system temp directory from `sys_get_temp_dir()`.
+</ParamField>
+
+## Complete configuration example
+
+Here's a comprehensive example showing all configuration options:
+
+```php
+use D4T\MT5Sdk\Configuration;
+use D4T\MT5Sdk\MT5Manager\BasicApi;
+use D4T\MT5Sdk\MT5Manager\UserApi;
+use GuzzleHttp\Client;
+
+// Create configuration
+$config = new Configuration();
+
+// Configure host
+$config->setHost('https://mt5-api.yourdomain.com/v1');
+
+// Get authentication token
+$basicApi = new BasicApi(new Client(), $config);
+$initResult = $basicApi->initGet(
+    getenv('MT5_SERVER'),
+    getenv('MT5_LOGIN'),
+    getenv('MT5_PASSWORD')
+);
+
+// Configure authentication
+$config->setAccessToken($initResult->getToken());
+
+// Configure user agent
+$config->setUserAgent('MyTradingApp/2.1.0');
+
+// Configure debugging (only in development)
+if (getenv('APP_ENV') === 'development') {
+    $config->setDebug(true);
+    $config->setDebugFile(__DIR__ . '/logs/api-debug.log');
+}
+
+// Configure temp folder
+$config->setTempFolderPath('/var/tmp/trading-app');
+
+// Use configuration with API clients
+$userApi = new UserApi(new Client(), $config);
+$user = $userApi->userUserLoginGet('12345');
+
+echo "Retrieved user: " . $user->getLogin() . "\n";
+```
+
+## HTTP client customization
+
+You can customize the HTTP client by passing a configured Guzzle client:
+
+```php
+use GuzzleHttp\Client;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
+
+// Create custom handler stack
+$stack = HandlerStack::create();
+
+// Add middleware for logging, retry, etc.
+$stack->push(Middleware::retry(function ($retries, $request, $response) {
+    // Retry on 5xx errors
+    return $retries < 3 && $response && $response->getStatusCode() >= 500;
+}));
+
+// Create custom HTTP client
+$httpClient = new Client([
+    'handler' => $stack,
+    'timeout' => 30,
+    'connect_timeout' => 10,
+    'verify' => true, // SSL verification
+]);
+
+// Pass custom client to API instance
+$userApi = new UserApi($httpClient, $config);
+```
+
+<Note>
+  The SDK uses Guzzle HTTP client. You can customize any Guzzle option by passing a configured client instance.
+</Note>
+
+## Environment-based configuration
+
+Use environment variables for different deployment environments:
+
+<CodeGroup>
+
+```php Production configuration
+// config/production.php
+use D4T\MT5Sdk\Configuration;
+
+$config = new Configuration();
+$config->setHost(getenv('MT5_API_HOST'));
+$config->setDebug(false);
+$config->setUserAgent('MyApp/' . getenv('APP_VERSION'));
+
+return $config;
+```
+
+```php Development configuration
+// config/development.php
+use D4T\MT5Sdk\Configuration;
+
+$config = new Configuration();
+$config->setHost(getenv('MT5_API_HOST') ?: 'http://localhost:8080/v1');
+$config->setDebug(true);
+$config->setDebugFile(__DIR__ . '/../logs/api-debug.log');
+$config->setUserAgent('MyApp-Dev/' . getenv('APP_VERSION'));
+
+return $config;
+```
+
+```env Environment variables
+# .env
+MT5_API_HOST=https://mt5-api.yourdomain.com/v1
+MT5_SERVER=127.0.0.1:443
+MT5_LOGIN=manager_login
+MT5_PASSWORD=manager_password
+APP_VERSION=1.0.0
+APP_ENV=production
+```
+
+</CodeGroup>
+
+## Configuration debugging report
+
+Generate a debug report to verify your configuration:
+
+```php
+// Generate debug report
+$report = Configuration::toDebugReport();
+echo $report;
+
+// Output:
+// PHP SDK (D4T\MT5Sdk) Debug Report:
+//     OS: Linux hostname 5.10.0-8-amd64 #1 SMP Debian ...
+//     PHP Version: 8.1.2
+//     OpenAPI Spec Version: 0.0.3-oas3
+//     Temp Folder Path: /tmp
+```
+
+From `~/workspace/source/lib/Configuration.php:393-402`:
+
+```php
+/**
+ * Gets the essential information for debugging
+ *
+ * @return string The report for debugging
+ */
+public static function toDebugReport()
+{
+    $report  = 'PHP SDK (D4T\\MT5Sdk) Debug Report:' . PHP_EOL;
+    $report .= '    OS: ' . php_uname() . PHP_EOL;
+    $report .= '    PHP Version: ' . PHP_VERSION . PHP_EOL;
+    $report .= '    OpenAPI Spec Version: 0.0.3-oas3' . PHP_EOL;
+    $report .= '    Temp Folder Path: ' . self::getDefaultConfiguration()->getTempFolderPath() . PHP_EOL;
+
+    return $report;
+}
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/core-concepts/authentication">
+    Learn how to obtain and configure bearer tokens
+  </Card>
+  
+  <Card title="Error handling" icon="triangle-exclamation" href="/core-concepts/error-handling">
+    Handle configuration errors and API exceptions
+  </Card>
+</CardGroup>

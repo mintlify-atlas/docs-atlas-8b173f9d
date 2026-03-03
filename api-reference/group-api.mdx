@@ -1,0 +1,353 @@
+---
+title: Group API
+description: Manage and retrieve MetaTrader 5 trading group configurations and settings
+---
+
+The Group API provides methods for retrieving trading group information, including group settings, configurations, and lists of available groups in your MetaTrader 5 server.
+
+<Note>
+All Group API methods require authentication via Bearer token. Obtain a token using the [Basic API](/api-reference/basic-api) `initGet()` method.
+</Note>
+
+## Methods
+
+### Get all groups
+
+<CodeGroup>
+```php PHP
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+// Configure Bearer authorization
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\GroupApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+try {
+    $groups = $apiInstance->groupsGet();
+    
+    echo "Available Groups: " . count($groups) . "\n";
+    foreach ($groups as $groupName) {
+        echo "- " . $groupName . "\n";
+    }
+} catch (Exception $e) {
+    echo 'Exception when calling GroupApi->groupsGet: ';
+    echo $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Retrieves a list of all trading groups configured on the MetaTrader 5 server.
+
+**HTTP Method:** `GET`
+
+**Endpoint:** `/groups/`
+
+**Authentication:** Required (Bearer token)
+
+#### Parameters
+
+This endpoint does not require any parameters.
+
+#### Returns
+
+**Type:** `string[]`
+
+Returns an array of group names.
+
+<ResponseField name="groups" type="array">
+  Array of group name strings
+  
+  Example: `["demo\\demoforex", "real\\standard", "real\\ecn"]`
+</ResponseField>
+
+---
+
+### Get group by name
+
+<CodeGroup>
+```php PHP
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+// Configure Bearer authorization
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\GroupApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$groupName = "demo\\demoforex";
+
+try {
+    $group = $apiInstance->groupGroupNameGet($groupName);
+    
+    echo "Group Information:\n";
+    echo "Name: " . $group->getName() . "\n";
+    echo "Currency: " . $group->getCurrency() . "\n";
+    echo "Leverage: 1:" . $group->getLeverage() . "\n";
+    echo "Margin Mode: " . $group->getMarginMode() . "\n";
+    
+    print_r($group);
+} catch (Exception $e) {
+    echo 'Exception when calling GroupApi->groupGroupNameGet: ';
+    echo $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Retrieves detailed configuration information for a specific trading group.
+
+**HTTP Method:** `GET`
+
+**Endpoint:** `/group/{group_name}`
+
+**Authentication:** Required (Bearer token)
+
+#### Parameters
+
+<ParamField path="group_name" type="string" required>
+  The name of the trading group to retrieve
+  
+  Example: `"demo\\demoforex"` or `"real\\standard"`
+  
+  Note: Use double backslashes (\\) to escape the backslash in group names
+</ParamField>
+
+#### Returns
+
+**Type:** `Group`
+
+Returns a comprehensive group object with all configuration settings.
+
+<ResponseField name="name" type="string">
+  Group name identifier
+</ResponseField>
+
+<ResponseField name="server" type="string">
+  Server identifier this group belongs to
+</ResponseField>
+
+<ResponseField name="currency" type="string">
+  Base currency for the group (e.g., "USD", "EUR")
+</ResponseField>
+
+<ResponseField name="leverage" type="integer">
+  Maximum leverage allowed for accounts in this group
+  
+  Example: `100` represents 1:100 leverage
+</ResponseField>
+
+<ResponseField name="margin_mode" type="integer">
+  Margin calculation mode
+  
+  - `0` - Retail
+  - `1` - Exchange
+  - `2` - Retail Hedged
+</ResponseField>
+
+<ResponseField name="margin_call" type="float">
+  Margin call level percentage
+  
+  Example: `80.0` triggers margin call at 80% margin level
+</ResponseField>
+
+<ResponseField name="margin_stop_out" type="float">
+  Stop-out level percentage
+  
+  Example: `50.0` triggers automatic position closure at 50% margin level
+</ResponseField>
+
+<ResponseField name="trade_disabled" type="boolean">
+  Whether trading is disabled for this group
+</ResponseField>
+
+<ResponseField name="otp_mode" type="integer">
+  One-time password (OTP) mode
+  
+  - `0` - Disabled
+  - `1` - Enabled
+  - `2` - Mandatory
+</ResponseField>
+
+<ResponseField name="interest_rate" type="float">
+  Interest rate applied to account balances
+</ResponseField>
+
+<ResponseField name="demo_deposit" type="float">
+  Default deposit amount for demo accounts
+</ResponseField>
+
+<ResponseField name="demo_leverage" type="integer">
+  Default leverage for demo accounts
+</ResponseField>
+
+## Group configuration
+
+### Understanding group structure
+
+Trading groups in MetaTrader 5 define the trading conditions and account settings for users. Each group can have different:
+
+- **Leverage limits**: Maximum allowed leverage
+- **Margin requirements**: How margin is calculated
+- **Trading restrictions**: Which symbols are tradable
+- **Commission settings**: Fee structures
+- **Risk management**: Margin call and stop-out levels
+
+### Group naming conventions
+
+Groups typically follow a hierarchical naming structure:
+
+```
+AccountType\GroupName
+
+Examples:
+- demo\demoforex
+- demo\democrypto
+- real\standard
+- real\ecn
+- real\pro
+```
+
+## Use cases
+
+### List all available groups
+
+```php
+$groups = $apiInstance->groupsGet();
+
+echo "Available Trading Groups:\n";
+foreach ($groups as $index => $groupName) {
+    echo ($index + 1) . ". " . $groupName . "\n";
+}
+```
+
+### Verify group settings before user creation
+
+```php
+$groupName = "demo\\demoforex";
+$group = $apiInstance->groupGroupNameGet($groupName);
+
+if ($group->getTradeDisabled()) {
+    echo "WARNING: Trading is disabled for this group\n";
+}
+
+if ($group->getLeverage() < 100) {
+    echo "NOTE: This group has limited leverage (1:" . $group->getLeverage() . ")\n";
+}
+
+echo "Margin Call Level: " . $group->getMarginCall() . "%\n";
+echo "Stop-Out Level: " . $group->getMarginStopOut() . "%\n";
+```
+
+### Compare group configurations
+
+```php
+$groups = $apiInstance->groupsGet();
+
+echo "Group Comparison:\n";
+echo "Name | Leverage | Margin Call | Stop-Out | Currency\n";
+echo str_repeat("-", 70) . "\n";
+
+foreach ($groups as $groupName) {
+    $group = $apiInstance->groupGroupNameGet($groupName);
+    
+    echo $group->getName() . " | ";
+    echo "1:" . $group->getLeverage() . " | ";
+    echo $group->getMarginCall() . "% | ";
+    echo $group->getMarginStopOut() . "% | ";
+    echo $group->getCurrency() . "\n";
+}
+```
+
+### Check demo account settings
+
+```php
+$groupName = "demo\\demoforex";
+$group = $apiInstance->groupGroupNameGet($groupName);
+
+echo "Demo Account Settings:\n";
+echo "Default Deposit: $" . $group->getDemoDeposit() . "\n";
+echo "Demo Leverage: 1:" . $group->getDemoLeverage() . "\n";
+echo "Currency: " . $group->getCurrency() . "\n";
+```
+
+## Async methods
+
+Both methods provide asynchronous versions for non-blocking operations:
+
+### Get all groups asynchronously
+
+```php
+$promise = $apiInstance->groupsGetAsync();
+
+$promise->then(
+    function ($groups) {
+        echo "Found " . count($groups) . " groups";
+    },
+    function ($exception) {
+        echo "Error: " . $exception->getMessage();
+    }
+);
+```
+
+### Get group details asynchronously
+
+```php
+$promise = $apiInstance->groupGroupNameGetAsync($groupName);
+
+$promise->then(
+    function ($group) {
+        echo "Group: " . $group->getName();
+        echo " | Leverage: 1:" . $group->getLeverage();
+    },
+    function ($exception) {
+        echo "Error: " . $exception->getMessage();
+    }
+);
+```
+
+## Error responses
+
+<ResponseField name="400" type="Bad Request">
+  Invalid group name format or group does not exist
+</ResponseField>
+
+<ResponseField name="401" type="Unauthorized">
+  Missing or invalid authentication token
+</ResponseField>
+
+<ResponseField name="404" type="Not Found">
+  Group not found on the server
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Server error while retrieving group information
+</ResponseField>
+
+## Best practices
+
+1. **Cache group lists**: Group configurations rarely change, so cache the results to reduce API calls
+2. **Validate group names**: Always verify a group exists before assigning users to it
+3. **Monitor risk settings**: Regularly check margin call and stop-out levels
+4. **Document groups**: Maintain documentation of what each group is used for
+5. **User assignment**: Choose appropriate groups based on user experience and account type
+6. **Leverage limits**: Ensure users understand the leverage available in their assigned group
+
+<Tip>
+When creating new users, always verify the target group exists and has appropriate settings by calling `groupGroupNameGet()` first.
+</Tip>
+
+## Related APIs
+
+- [User API](/api-reference/user-api) - Create users and assign them to groups
+- [Account API](/api-reference/account-api) - View account information for users in groups
+- [Basic API](/api-reference/basic-api) - Initialize connection and authenticate

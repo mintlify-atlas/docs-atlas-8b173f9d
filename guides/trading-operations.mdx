@@ -1,0 +1,482 @@
+---
+title: Trading operations
+description: Query positions, orders, and deals, and manage open positions using the MT5 Manager API SDK
+---
+
+The Trade API provides methods for monitoring and managing trading activity in MetaTrader 5. You can query open positions, pending orders, historical deals, and close positions when needed.
+
+## Overview
+
+Trading operations allow you to:
+- Retrieve current open positions for a user
+- Query pending orders
+- Access historical deal records
+- Close all positions for a specific account
+
+<Info>
+All trading operations are performed through the `TradeApi` class in the `D4T\MT5Sdk\MT5Manager` namespace.
+</Info>
+
+## Querying open positions
+
+Use the `positionsUserLoginGet` method to retrieve all currently open positions for a specific user.
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\TradeApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$user_login = "user_login_example";
+
+try {
+    $result = $apiInstance->positionsUserLoginGet($user_login);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling TradeApi->positionsUserLoginGet: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+
+### Position data structure
+
+The `Position` model contains the following fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | int | Position identifier |
+| `symbol` | string | Trading symbol (e.g., "EURUSD") |
+| `action` | int | Position type (0 = buy, 1 = sell) |
+| `volume` | float | Position size in lots |
+| `price` | float | Opening price |
+| `time` | string | Time position was opened |
+
+### Understanding position types
+
+<Tabs>
+  <Tab title="Buy positions">
+    When `action` is `0`, the position is a **buy (long)** position.
+
+    - Profits when price increases
+    - Losses when price decreases
+    - Opened at Ask price, closed at Bid price
+
+    Example:
+    ```php
+    if ($position->getAction() == 0) {
+        echo "Long position on " . $position->getSymbol() . "\n";
+        echo "Volume: " . $position->getVolume() . " lots\n";
+        echo "Entry price: " . $position->getPrice() . "\n";
+    }
+    ```
+  </Tab>
+
+  <Tab title="Sell positions">
+    When `action` is `1`, the position is a **sell (short)** position.
+
+    - Profits when price decreases
+    - Losses when price increases
+    - Opened at Bid price, closed at Ask price
+
+    Example:
+    ```php
+    if ($position->getAction() == 1) {
+        echo "Short position on " . $position->getSymbol() . "\n";
+        echo "Volume: " . $position->getVolume() . " lots\n";
+        echo "Entry price: " . $position->getPrice() . "\n";
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Querying orders
+
+The `ordersUserLoginGet` method retrieves pending orders for a user. You can filter by time range and order type.
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\TradeApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$user_login = "user_login_example";
+$days_back = "days_back_example";
+$types = "types_example";
+
+try {
+    $result = $apiInstance->ordersUserLoginGet($user_login, $days_back, $types);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling TradeApi->ordersUserLoginGet: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+
+### Order parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `user_login` | string | User's login ID |
+| `days_back` | string | Number of days to look back |
+| `types` | string | Filter by order types |
+
+### Order data structure
+
+The `Order` model includes:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `symbol` | string | Trading symbol |
+| `type` | int | Order type code |
+| `type_str` | string | Human-readable order type |
+| `profit` | float | Current profit/loss |
+
+<Note>
+Pending orders include Buy Limit, Sell Limit, Buy Stop, and Sell Stop orders that haven't been executed yet.
+</Note>
+
+## Retrieving deals history
+
+Use `dealsUserLoginGet` to access the complete trading history, including executed trades, deposits, and withdrawals.
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\TradeApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$user_login = "user_login_example";
+$days_back = "days_back_example";
+
+try {
+    $result = $apiInstance->dealsUserLoginGet($user_login, $days_back);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling TradeApi->dealsUserLoginGet: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+
+### Deal data structure
+
+The `Deal` model provides comprehensive information about each transaction:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `ticket` | int | Deal ticket number |
+| `symbol` | string | Trading symbol |
+| `action` | int | Deal action type |
+| `type` | int | Deal type |
+| `type_str` | string | Human-readable deal type |
+| `entry` | int | Entry type (in/out/reverse) |
+| `reason` | int | Deal execution reason |
+| `lots` | float | Volume in lots |
+| `price` | float | Execution price |
+| `time` | string | Execution time |
+| `sl` | float | Stop Loss level |
+| `tp` | float | Take Profit level |
+| `pl` | float | Profit/loss |
+| `commission` | float | Commission charged |
+| `swap` | float | Swap (overnight interest) |
+| `comment` | string | Deal comment |
+
+### Understanding deal types
+
+<Tabs>
+  <Tab title="Deal actions">
+    The `action` field indicates the type of operation:
+
+    - `0`: Buy
+    - `1`: Sell
+    - `2`: Deposit operation
+    - `3`: Credit operation
+    - `4`: Additional charges
+    - `5`: Correction deals
+    - `6`: Bonus
+    - `7`: Commission
+
+    Example:
+    ```php
+    foreach ($deals as $deal) {
+        switch ($deal->getAction()) {
+            case 0:
+                echo "Buy: " . $deal->getSymbol() . "\n";
+                break;
+            case 1:
+                echo "Sell: " . $deal->getSymbol() . "\n";
+                break;
+            case 2:
+                echo "Deposit: $" . $deal->getPl() . "\n";
+                break;
+        }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Entry types">
+    The `entry` field shows how the deal relates to a position:
+
+    - `0`: In market (opening a position)
+    - `1`: Out of market (closing a position)
+    - `2`: Reverse (closing and opening opposite)
+    - `3`: Closed by hedged position
+
+    This helps you track whether a deal opened or closed a position.
+  </Tab>
+
+  <Tab title="Deal reasons">
+    The `reason` field indicates why the deal was executed:
+
+    - `0`: Deal placed manually
+    - `1`: Deal placed by expert (EA)
+    - `2`: Deal placed by dealer
+    - `3`: Deal placed due to Stop Loss
+    - `4`: Deal placed due to Take Profit
+    - `16`: Deal placed manually by mobile terminal
+    - `17`: Deal placed manually by web terminal
+
+    This is useful for analyzing trading behavior and automation.
+  </Tab>
+</Tabs>
+
+## Closing all positions
+
+The `closeAllUserLoginDelete` method closes all open positions for a specified user account.
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\TradeApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$user_login = "user_login_example";
+
+try {
+    $apiInstance->closeAllUserLoginDelete($user_login);
+} catch (Exception $e) {
+    echo 'Exception when calling TradeApi->closeAllUserLoginDelete: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+
+<Warning>
+Closing all positions is irreversible and executes immediately at current market prices. Use this with caution, especially during volatile market conditions.
+</Warning>
+
+### Use cases for closing all positions
+
+- **Risk management**: Emergency closure during high volatility
+- **Account termination**: Closing out positions before disabling an account
+- **Margin calls**: Automated risk management when margin level is too low
+- **End of day**: Closing positions for accounts that shouldn't hold overnight
+
+## Complete trading monitoring example
+
+Here's a comprehensive example that monitors trading activity:
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$tradeApi = new D4T\MT5Sdk\MT5Manager\TradeApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$login = "12345";
+
+try {
+    // 1. Get current positions
+    echo "=== Open Positions ===\n";
+    $positions = $tradeApi->positionsUserLoginGet($login);
+    
+    $totalVolume = 0;
+    foreach ($positions as $position) {
+        $direction = $position->getAction() == 0 ? "BUY" : "SELL";
+        echo "$direction {$position->getVolume()} lots of {$position->getSymbol()} @ {$position->getPrice()}\n";
+        $totalVolume += $position->getVolume();
+    }
+    echo "Total volume: $totalVolume lots\n\n";
+    
+    // 2. Get pending orders
+    echo "=== Pending Orders ===\n";
+    $orders = $tradeApi->ordersUserLoginGet($login, "30", null);
+    
+    foreach ($orders as $order) {
+        echo "{$order->getTypeStr()}: {$order->getSymbol()}\n";
+    }
+    echo "\n";
+    
+    // 3. Get recent deals (last 7 days)
+    echo "=== Recent Deals ===\n";
+    $deals = $tradeApi->dealsUserLoginGet($login, "7");
+    
+    $totalProfit = 0;
+    foreach ($deals as $deal) {
+        if ($deal->getAction() <= 1) { // Only trading deals
+            echo "Ticket #{$deal->getTicket()}: {$deal->getTypeStr()} {$deal->getSymbol()} - P/L: {$deal->getPl()}\n";
+            $totalProfit += $deal->getPl();
+        }
+    }
+    echo "Total P/L (7 days): $totalProfit\n\n";
+    
+    // 4. Risk check - close all if too many positions
+    if (count($positions) > 10) {
+        echo "WARNING: Too many open positions. Closing all...\n";
+        $tradeApi->closeAllUserLoginDelete($login);
+        echo "All positions closed\n";
+    }
+    
+} catch (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+}
+?>
+```
+
+## Calculating trading statistics
+
+You can use the deals history to calculate various trading metrics:
+
+```php
+function calculateStatistics($deals) {
+    $stats = [
+        'total_deals' => 0,
+        'winning_deals' => 0,
+        'losing_deals' => 0,
+        'total_profit' => 0,
+        'total_loss' => 0,
+        'total_commission' => 0,
+        'total_swap' => 0,
+    ];
+    
+    foreach ($deals as $deal) {
+        // Only count trading deals (action 0 or 1)
+        if ($deal->getAction() <= 1) {
+            $stats['total_deals']++;
+            
+            if ($deal->getPl() > 0) {
+                $stats['winning_deals']++;
+                $stats['total_profit'] += $deal->getPl();
+            } elseif ($deal->getPl() < 0) {
+                $stats['losing_deals']++;
+                $stats['total_loss'] += abs($deal->getPl());
+            }
+            
+            $stats['total_commission'] += $deal->getCommission();
+            $stats['total_swap'] += $deal->getSwap();
+        }
+    }
+    
+    // Calculate derived metrics
+    $stats['win_rate'] = $stats['total_deals'] > 0 
+        ? ($stats['winning_deals'] / $stats['total_deals']) * 100 
+        : 0;
+    
+    $stats['net_profit'] = $stats['total_profit'] - $stats['total_loss'] 
+        - $stats['total_commission'] - $stats['total_swap'];
+    
+    return $stats;
+}
+```
+
+## Best practices
+
+<Accordion title="Filter deals by time range">
+  Always specify a reasonable time range when querying deals to avoid performance issues:
+
+  ```php
+  // Good: Query last 30 days
+  $deals = $tradeApi->dealsUserLoginGet($login, "30");
+  
+  // Better: Query only what you need
+  $deals = $tradeApi->dealsUserLoginGet($login, "7");
+  ```
+</Accordion>
+
+<Accordion title="Handle empty results">
+  Always check if results are empty before processing:
+
+  ```php
+  $positions = $tradeApi->positionsUserLoginGet($login);
+  
+  if (empty($positions)) {
+      echo "No open positions\n";
+  } else {
+      foreach ($positions as $position) {
+          // Process position
+      }
+  }
+  ```
+</Accordion>
+
+<Accordion title="Monitor positions before closing">
+  Before closing all positions, retrieve and log them for audit purposes:
+
+  ```php
+  $positions = $tradeApi->positionsUserLoginGet($login);
+  
+  // Log positions
+  file_put_contents(
+      'closed_positions.log',
+      json_encode($positions) . "\n",
+      FILE_APPEND
+  );
+  
+  // Then close
+  $tradeApi->closeAllUserLoginDelete($login);
+  ```
+</Accordion>
+
+## Error handling
+
+Implement robust error handling for trading operations:
+
+```php
+try {
+    $positions = $tradeApi->positionsUserLoginGet($login);
+} catch (\D4T\MT5Sdk\ApiException $e) {
+    if ($e->getCode() == 404) {
+        echo "User not found or has no positions\n";
+    } elseif ($e->getCode() == 403) {
+        echo "Access denied to trading information\n";
+    } else {
+        echo "API Error: " . $e->getMessage() . "\n";
+        error_log("TradeApi Error: " . $e->getResponseBody());
+    }
+} catch (Exception $e) {
+    echo "General Error: " . $e->getMessage() . "\n";
+}
+```
+
+## Next steps
+
+- Learn about [account operations](/guides/account-operations) to manage balances
+- Explore [user management](/guides/user-management) for account administration
+- Understand [groups and symbols](/guides/groups-and-symbols) configuration

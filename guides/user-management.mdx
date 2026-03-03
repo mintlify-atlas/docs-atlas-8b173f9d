@@ -1,0 +1,359 @@
+---
+title: User management
+description: Learn how to create, update, retrieve, and delete users in MetaTrader 5 using the Manager API SDK
+---
+
+The User API provides comprehensive methods for managing MT5 user accounts. This guide covers the complete lifecycle of user management operations.
+
+## Overview
+
+User management in MT5 involves creating trading accounts, updating user information, retrieving user details, and managing user passwords. All operations require proper authentication using bearer tokens.
+
+<Info>
+All user operations are performed through the `UserApi` class in the `D4T\MT5Sdk\MT5Manager` namespace.
+</Info>
+
+## Creating users
+
+To create a new user account, use the `userAddPost` method. This operation returns the newly created user's login ID.
+
+<Steps>
+  <Step title="Configure authentication">
+    Set up the SDK configuration with your access token:
+
+    ```php
+    <?php
+    require_once(__DIR__ . '/vendor/autoload.php');
+
+    $config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+        ->setAccessToken('YOUR_ACCESS_TOKEN');
+    ```
+  </Step>
+
+  <Step title="Initialize the API instance">
+    Create a new instance of the UserApi:
+
+    ```php
+    $apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+        new GuzzleHttp\Client(),
+        $config
+    );
+    ```
+  </Step>
+
+  <Step title="Prepare user data">
+    Create a User object with the required fields:
+
+    ```php
+    $body = new \D4T\MT5Sdk\Models\User();
+    // Set user properties:
+    // - password_investor: Investor (read-only) password
+    // - password: Main trading password
+    // - name: User's full name
+    // - email: User's email address
+    // - group: MT5 group assignment (e.g., "demo\demoforex")
+    // - leverage: Trading leverage (e.g., 100 for 1:100)
+    ```
+  </Step>
+
+  <Step title="Create the user">
+    Execute the API call to create the user:
+
+    ```php
+    try {
+        $result = $apiInstance->userAddPost($body);
+        print_r($result);
+    } catch (Exception $e) {
+        echo 'Exception when calling UserApi->userAddPost: ', $e->getMessage(), PHP_EOL;
+    }
+    ```
+  </Step>
+</Steps>
+
+### Complete example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$body = new \D4T\MT5Sdk\Models\User();
+// Example data: {"password_investor":"123456Aa","password":"123456Aa", "name":"test", "email": "test@test.com","group":"demo\\demoforex","leverage":100}
+
+try {
+    $result = $apiInstance->userAddPost($body);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling UserApi->userAddPost: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+
+<Note>
+The group name may contain backslashes (e.g., `demo\demoforex`). Ensure you properly escape these in your code.
+</Note>
+
+## Retrieving user information
+
+You can retrieve user information either individually by login ID or in bulk by group.
+
+<Tabs>
+  <Tab title="Get single user">
+    Use `userUserLoginGet` to retrieve a specific user by their login ID:
+
+    ```php
+    <?php
+    require_once(__DIR__ . '/vendor/autoload.php');
+
+    $config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+        ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+    $apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+        new GuzzleHttp\Client(),
+        $config
+    );
+
+    $user_login = "user_login_example";
+
+    try {
+        $result = $apiInstance->userUserLoginGet($user_login);
+        print_r($result);
+    } catch (Exception $e) {
+        echo 'Exception when calling UserApi->userUserLoginGet: ', $e->getMessage(), PHP_EOL;
+    }
+    ?>
+    ```
+
+    **Returns:** A `User` object containing all user information including name, email, group, leverage, and other profile details.
+  </Tab>
+
+  <Tab title="Get users by group">
+    Use `usersGroupGet` to retrieve all users belonging to a specific group:
+
+    ```php
+    <?php
+    require_once(__DIR__ . '/vendor/autoload.php');
+
+    $config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+        ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+    $apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+        new GuzzleHttp\Client(),
+        $config
+    );
+
+    $group = "group_example";
+
+    try {
+        $result = $apiInstance->usersGroupGet($group);
+        print_r($result);
+    } catch (Exception $e) {
+        echo 'Exception when calling UserApi->usersGroupGet: ', $e->getMessage(), PHP_EOL;
+    }
+    ?>
+    ```
+
+    **Returns:** A `CachedLogins` object containing an array of user logins in the specified group.
+  </Tab>
+</Tabs>
+
+## Updating user information
+
+To modify existing user details, use the `updateUser` method. You can update various fields including name, password, email, and other profile information.
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$body = new \D4T\MT5Sdk\Models\User();
+// Example data: {"login": 1, "password":"new_pwd", "name":"new_name"}
+
+try {
+    $apiInstance->updateUser($body);
+} catch (Exception $e) {
+    echo 'Exception when calling UserApi->updateUser: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+
+<Warning>
+When updating a user, you must include the `login` field to identify which user to update. Only include the fields you want to modify.
+</Warning>
+
+### Available user fields
+
+The `User` model supports the following properties:
+
+| Field | Type | Description | Required |
+|-------|------|-------------|----------|
+| `login` | int | User's login ID | For updates |
+| `name` | string | User's full name | Yes (create) |
+| `email` | string | User's email address | Yes (create) |
+| `group` | string | MT5 group assignment | Yes (create) |
+| `password` | string | Trading password | Optional |
+| `password_investor` | string | Investor password | Optional |
+| `leverage` | int | Trading leverage | Optional |
+| `city` | string | City | Optional |
+| `phone` | string | Phone number | Optional |
+| `address` | string | Street address | Optional |
+| `state` | string | State/province | Optional |
+| `zipcode` | string | Postal code | Optional |
+| `comment` | string | Additional notes | Optional |
+| `agent_account` | int | Agent account ID | Optional |
+| `id_number` | string | Identification number | Optional |
+
+## Resetting passwords
+
+The `userResetPwdPost` method allows you to reset a user's password. You can reset either the main trading password or the investor password.
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$body = new \D4T\MT5Sdk\Models\ResetPwdType();
+// Example data: {"login": 1, "password":"new_pwd", "change_investor":0}
+
+try {
+    $apiInstance->userResetPwdPost($body);
+} catch (Exception $e) {
+    echo 'Exception when calling UserApi->userResetPwdPost: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+
+### Password reset parameters
+
+- `login`: The user's login ID
+- `password`: The new password to set
+- `change_investor`: Set to `1` to change investor password, `0` for main password
+
+<Info>
+Investor passwords provide read-only access to an account, allowing users to monitor trading activity without the ability to execute trades.
+</Info>
+
+## Deleting users
+
+To remove a user account from the system, use the `userUserLoginDelete` method.
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$user_login = "user_login_example";
+
+try {
+    $apiInstance->userUserLoginDelete($user_login);
+} catch (Exception $e) {
+    echo 'Exception when calling UserApi->userUserLoginDelete: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+
+<Warning>
+Deleting a user is a permanent operation. Ensure you have proper authorization and have backed up any necessary data before deleting user accounts.
+</Warning>
+
+## Complete workflow example
+
+Here's a complete example that demonstrates the full user lifecycle:
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+// Configure API
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+// 1. Create a new user
+$newUser = new \D4T\MT5Sdk\Models\User();
+// Set user properties...
+
+try {
+    $createdUser = $apiInstance->userAddPost($newUser);
+    $userLogin = $createdUser->getLogin();
+    echo "User created with login: " . $userLogin . "\n";
+    
+    // 2. Retrieve the user
+    $user = $apiInstance->userUserLoginGet($userLogin);
+    echo "Retrieved user: " . $user->getName() . "\n";
+    
+    // 3. Update the user
+    $updateData = new \D4T\MT5Sdk\Models\User();
+    $apiInstance->updateUser($updateData);
+    echo "User updated successfully\n";
+    
+    // 4. Reset password
+    $resetPwd = new \D4T\MT5Sdk\Models\ResetPwdType();
+    $apiInstance->userResetPwdPost($resetPwd);
+    echo "Password reset successfully\n";
+    
+    // 5. Delete the user (if needed)
+    // $apiInstance->userUserLoginDelete($userLogin);
+    // echo "User deleted successfully\n";
+    
+} catch (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+}
+?>
+```
+
+## Error handling
+
+All UserApi methods can throw exceptions. Always wrap your API calls in try-catch blocks to handle errors gracefully:
+
+```php
+try {
+    $result = $apiInstance->userAddPost($body);
+} catch (\D4T\MT5Sdk\ApiException $e) {
+    // API-specific error
+    echo "API Error: " . $e->getMessage() . "\n";
+    echo "HTTP Code: " . $e->getCode() . "\n";
+    echo "Response Body: " . $e->getResponseBody() . "\n";
+} catch (Exception $e) {
+    // General error
+    echo "General Error: " . $e->getMessage() . "\n";
+}
+```
+
+## Next steps
+
+- Learn about [account operations](/guides/account-operations) for managing deposits and withdrawals
+- Explore [trading operations](/guides/trading-operations) to query positions and orders
+- Understand [groups and symbols](/guides/groups-and-symbols) configuration

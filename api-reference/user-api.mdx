@@ -1,0 +1,486 @@
+---
+title: User API
+description: Manage MetaTrader 5 user accounts including creation, updates, deposits, withdrawals, and password management
+---
+
+The User API provides comprehensive methods for managing trading accounts in MetaTrader 5. You can create new users, update account information, manage balances, and perform user-related operations.
+
+<Note>
+All User API methods require authentication via Bearer token. Obtain a token using the [Basic API](/api-reference/basic-api) `initGet()` method.
+</Note>
+
+## Methods
+
+### Create user
+
+<CodeGroup>
+```php PHP
+<?php
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$body = new \D4T\MT5Sdk\Models\User();
+$body->setPassword("SecurePass123!");
+$body->setPasswordInvestor("InvestorPass123!");
+$body->setName("John Doe");
+$body->setEmail("john.doe@example.com");
+$body->setGroup("demo\\demoforex");
+$body->setLeverage(100);
+
+try {
+    $result = $apiInstance->userAddPost($body);
+    echo "User created with login: " . $result->getLogin();
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Creates a new trading account in MetaTrader 5 with the specified parameters.
+
+**HTTP Method:** `POST`
+
+**Endpoint:** `/user/add`
+
+**Authentication:** Required
+
+#### Request body
+
+<ParamField body="password" type="string" required>
+  Main account password for trading operations
+  
+  Must meet password complexity requirements
+</ParamField>
+
+<ParamField body="password_investor" type="string" required>
+  Investor (read-only) password
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  User's full name
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  User's email address
+</ParamField>
+
+<ParamField body="group" type="string" required>
+  Trading group name (e.g., `demo\\demoforex`)
+</ParamField>
+
+<ParamField body="leverage" type="integer" required>
+  Account leverage (e.g., 100 for 1:100)
+</ParamField>
+
+#### Returns
+
+**Type:** `UserReturnType`
+
+<ResponseField name="login" type="integer">
+  Newly created user's login identifier
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Creation status
+</ResponseField>
+
+---
+
+### Get user by login
+
+<CodeGroup>
+```php PHP
+<?php
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$userLogin = "12345";
+
+try {
+    $user = $apiInstance->userUserLoginGet($userLogin);
+    echo "User: " . $user->getName();
+    echo "Balance: " . $user->getBalance();
+    print_r($user);
+} catch (Exception $e) {
+    echo 'Exception: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Retrieves detailed information about a user account by login identifier.
+
+**HTTP Method:** `GET`
+
+**Endpoint:** `/user/{user_login}`
+
+**Authentication:** Required
+
+#### Parameters
+
+<ParamField path="user_login" type="string" required>
+  The user login identifier to retrieve
+</ParamField>
+
+#### Returns
+
+**Type:** `User`
+
+Returns a complete user object with all account details.
+
+---
+
+### Update user
+
+<CodeGroup>
+```php PHP
+<?php
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$body = new \D4T\MT5Sdk\Models\User();
+$body->setLogin(12345);
+$body->setName("Jane Smith");
+$body->setPassword("NewSecurePass456!");
+
+try {
+    $apiInstance->updateUser($body);
+    echo "User updated successfully";
+} catch (Exception $e) {
+    echo 'Exception: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Updates an existing user account with new information.
+
+**HTTP Method:** `POST`
+
+**Endpoint:** `/user/update`
+
+**Authentication:** Required
+
+#### Request body
+
+<ParamField body="login" type="integer" required>
+  User login identifier to update
+</ParamField>
+
+<ParamField body="password" type="string">
+  New main password (optional)
+</ParamField>
+
+<ParamField body="name" type="string">
+  New user name (optional)
+</ParamField>
+
+<ParamField body="email" type="string">
+  New email address (optional)
+</ParamField>
+
+<ParamField body="group" type="string">
+  New trading group (optional)
+</ParamField>
+
+<ParamField body="leverage" type="integer">
+  New leverage value (optional)
+</ParamField>
+
+#### Returns
+
+**Type:** `void`
+
+Returns no content on success (HTTP 200).
+
+---
+
+### Delete user
+
+<CodeGroup>
+```php PHP
+<?php
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$userLogin = "12345";
+
+try {
+    $apiInstance->userUserLoginDelete($userLogin);
+    echo "User deleted successfully";
+} catch (Exception $e) {
+    echo 'Exception: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Permanently deletes a user account from the system.
+
+**HTTP Method:** `DELETE`
+
+**Endpoint:** `/user/{user_login}`
+
+**Authentication:** Required
+
+#### Parameters
+
+<ParamField path="user_login" type="string" required>
+  The user login identifier to delete
+</ParamField>
+
+<Warning>
+This action is irreversible. Ensure you have proper backups before deleting user accounts.
+</Warning>
+
+---
+
+### Deposit to account
+
+<CodeGroup>
+```php PHP
+<?php
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$body = new \D4T\MT5Sdk\Models\BalanceType();
+$body->setLogin(12345);
+$body->setAmount(1000.50);
+$body->setType(3); // Balance operation type
+$body->setComment("Deposit via API");
+
+try {
+    $apiInstance->userDepositPost($body);
+    echo "Deposit successful";
+} catch (Exception $e) {
+    echo 'Exception: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Adds funds to a user's trading account.
+
+**HTTP Method:** `POST`
+
+**Endpoint:** `/user/deposit`
+
+**Authentication:** Required
+
+#### Request body
+
+<ParamField body="login" type="integer" required>
+  User login identifier
+</ParamField>
+
+<ParamField body="amount" type="float" required>
+  Deposit amount (must be positive)
+</ParamField>
+
+<ParamField body="type" type="integer" required>
+  Balance operation type
+  
+  Common values:
+  - `2` - Deposit
+  - `3` - Balance correction
+</ParamField>
+
+<ParamField body="comment" type="string" required>
+  Transaction comment for audit trail
+</ParamField>
+
+---
+
+### Withdraw from account
+
+<CodeGroup>
+```php PHP
+<?php
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$body = new \D4T\MT5Sdk\Models\BalanceType();
+$body->setLogin(12345);
+$body->setAmount(500.00);
+$body->setType(3);
+$body->setComment("Withdrawal via API");
+
+try {
+    $apiInstance->userWithdrawPost($body);
+    echo "Withdrawal successful";
+} catch (Exception $e) {
+    echo 'Exception: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Removes funds from a user's trading account.
+
+**HTTP Method:** `POST`
+
+**Endpoint:** `/user/withdraw`
+
+**Authentication:** Required
+
+#### Request body
+
+Same as deposit method - see above for parameter details.
+
+<Note>
+Ensure the account has sufficient balance before attempting a withdrawal.
+</Note>
+
+---
+
+### Reset password
+
+<CodeGroup>
+```php PHP
+<?php
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$body = new \D4T\MT5Sdk\Models\ResetPwdType();
+$body->setLogin(12345);
+$body->setPassword("NewPassword789!");
+$body->setChangeInvestor(0); // 0 = main password, 1 = investor password
+
+try {
+    $apiInstance->userResetPwdPost($body);
+    echo "Password reset successful";
+} catch (Exception $e) {
+    echo 'Exception: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Resets a user's trading or investor password.
+
+**HTTP Method:** `POST`
+
+**Endpoint:** `/user/reset_pwd`
+
+**Authentication:** Required
+
+#### Request body
+
+<ParamField body="login" type="integer" required>
+  User login identifier
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  New password
+</ParamField>
+
+<ParamField body="change_investor" type="integer" required>
+  Password type to change
+  
+  - `0` - Main trading password
+  - `1` - Investor (read-only) password
+</ParamField>
+
+---
+
+### Get users by group
+
+<CodeGroup>
+```php PHP
+<?php
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$group = "demo\\demoforex";
+
+try {
+    $result = $apiInstance->usersGroupGet($group);
+    echo "Found " . count($result->getLogins()) . " users";
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Retrieves a list of user logins belonging to a specific trading group.
+
+**HTTP Method:** `GET`
+
+**Endpoint:** `/users/{group}`
+
+**Authentication:** Required
+
+#### Parameters
+
+<ParamField path="group" type="string" required>
+  Trading group name
+</ParamField>
+
+#### Returns
+
+**Type:** `CachedLogins`
+
+<ResponseField name="logins" type="array">
+  Array of user login identifiers in the group
+</ResponseField>
+
+## Error responses
+
+All methods may return the following error codes:
+
+- **400 Bad Request**: Invalid parameters or insufficient balance
+- **401 Unauthorized**: Missing or invalid authentication token
+- **404 Not Found**: User not found
+- **500 Internal Server Error**: Server error
+
+## Best practices
+
+1. **Validation**: Always validate user input before creating or updating accounts
+2. **Password security**: Use strong passwords that meet complexity requirements
+3. **Balance operations**: Log all deposit/withdrawal operations with descriptive comments
+4. **Error handling**: Implement proper error handling for all user operations
+5. **Group management**: Ensure users are assigned to appropriate trading groups

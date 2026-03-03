@@ -1,0 +1,441 @@
+---
+title: Trade API
+description: Manage trading operations including positions, orders, deals, and close all functionality
+---
+
+The Trade API provides methods for retrieving trading history, managing open positions, viewing orders and deals, and closing all positions for a user account.
+
+<Note>
+All Trade API methods require authentication via Bearer token. Obtain a token using the [Basic API](/api-reference/basic-api) `initGet()` method.
+</Note>
+
+## Methods
+
+### Get user positions
+
+<CodeGroup>
+```php PHP
+<?php
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\TradeApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$userLogin = "12345";
+
+try {
+    $positions = $apiInstance->positionsUserLoginGet($userLogin);
+    
+    echo "Open Positions: " . count($positions) . "\n";
+    foreach ($positions as $position) {
+        echo "Symbol: " . $position->getSymbol();
+        echo " | Type: " . $position->getType();
+        echo " | Volume: " . $position->getVolume();
+        echo " | Profit: $" . $position->getProfit() . "\n";
+    }
+} catch (Exception $e) {
+    echo 'Exception: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Retrieves all currently open positions for a user account.
+
+**HTTP Method:** `GET`
+
+**Endpoint:** `/positions/{user_login}`
+
+**Authentication:** Required
+
+#### Parameters
+
+<ParamField path="user_login" type="string" required>
+  User login identifier
+</ParamField>
+
+#### Returns
+
+**Type:** `Position[]`
+
+Array of position objects with the following properties:
+
+<ResponseField name="symbol" type="string">
+  Trading symbol (e.g., "EURUSD")
+</ResponseField>
+
+<ResponseField name="type" type="integer">
+  Position type (0 = Buy, 1 = Sell)
+</ResponseField>
+
+<ResponseField name="volume" type="float">
+  Position size in lots
+</ResponseField>
+
+<ResponseField name="price_open" type="float">
+  Opening price
+</ResponseField>
+
+<ResponseField name="price_current" type="float">
+  Current market price
+</ResponseField>
+
+<ResponseField name="profit" type="float">
+  Current profit/loss
+</ResponseField>
+
+<ResponseField name="swap" type="float">
+  Accumulated swap/rollover
+</ResponseField>
+
+<ResponseField name="commission" type="float">
+  Position commission
+</ResponseField>
+
+---
+
+### Get user orders
+
+<CodeGroup>
+```php PHP
+<?php
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\TradeApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$userLogin = "12345";
+$daysBack = "30"; // Get orders from last 30 days
+$types = "0,1,2,3"; // Order types to include
+
+try {
+    $orders = $apiInstance->ordersUserLoginGet($userLogin, $daysBack, $types);
+    
+    echo "Orders found: " . count($orders) . "\n";
+    foreach ($orders as $order) {
+        echo "Order #" . $order->getOrder();
+        echo " | Symbol: " . $order->getSymbol();
+        echo " | Type: " . $order->getType();
+        echo " | Volume: " . $order->getVolume();
+        echo " | State: " . $order->getState() . "\n";
+    }
+} catch (Exception $e) {
+    echo 'Exception: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Retrieves order history for a user within a specified time period.
+
+**HTTP Method:** `GET`
+
+**Endpoint:** `/orders/{user_login}`
+
+**Authentication:** Required
+
+#### Parameters
+
+<ParamField path="user_login" type="string" required>
+  User login identifier
+</ParamField>
+
+<ParamField query="days_back" type="string" required>
+  Number of days to look back for orders
+  
+  Example: `"30"` for orders from the last 30 days
+</ParamField>
+
+<ParamField query="types" type="string" required>
+  Comma-separated list of order types to retrieve
+  
+  Order types:
+  - `0` - Buy
+  - `1` - Sell
+  - `2` - Buy Limit
+  - `3` - Sell Limit
+  - `4` - Buy Stop
+  - `5` - Sell Stop
+  
+  Example: `"0,1,2,3"` for market and limit orders
+</ParamField>
+
+#### Returns
+
+**Type:** `Order[]`
+
+Array of order objects.
+
+---
+
+### Get user deals
+
+<CodeGroup>
+```php PHP
+<?php
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\TradeApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$userLogin = "12345";
+$daysBack = "7"; // Get deals from last 7 days
+
+try {
+    $deals = $apiInstance->dealsUserLoginGet($userLogin, $daysBack);
+    
+    echo "Deals found: " . count($deals) . "\n";
+    
+    $totalProfit = 0;
+    foreach ($deals as $deal) {
+        echo "Deal #" . $deal->getDeal();
+        echo " | Symbol: " . $deal->getSymbol();
+        echo " | Volume: " . $deal->getVolume();
+        echo " | Profit: $" . $deal->getProfit() . "\n";
+        
+        $totalProfit += $deal->getProfit();
+    }
+    
+    echo "Total Profit/Loss: $" . $totalProfit . "\n";
+} catch (Exception $e) {
+    echo 'Exception: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Retrieves the deal history (executed transactions) for a user within a specified time period.
+
+**HTTP Method:** `GET`
+
+**Endpoint:** `/deals/{user_login}`
+
+**Authentication:** Required
+
+#### Parameters
+
+<ParamField path="user_login" type="string" required>
+  User login identifier
+</ParamField>
+
+<ParamField query="days_back" type="string" required>
+  Number of days to look back for deals
+  
+  Example: `"7"` for the last 7 days
+</ParamField>
+
+#### Returns
+
+**Type:** `Deal[]`
+
+Array of deal objects with the following properties:
+
+<ResponseField name="deal" type="integer">
+  Unique deal identifier
+</ResponseField>
+
+<ResponseField name="order" type="integer">
+  Associated order identifier
+</ResponseField>
+
+<ResponseField name="symbol" type="string">
+  Trading symbol
+</ResponseField>
+
+<ResponseField name="type" type="integer">
+  Deal type (0 = Buy, 1 = Sell)
+</ResponseField>
+
+<ResponseField name="volume" type="float">
+  Deal volume in lots
+</ResponseField>
+
+<ResponseField name="price" type="float">
+  Execution price
+</ResponseField>
+
+<ResponseField name="profit" type="float">
+  Profit/loss from the deal
+</ResponseField>
+
+<ResponseField name="commission" type="float">
+  Commission charged
+</ResponseField>
+
+<ResponseField name="swap" type="float">
+  Swap/rollover amount
+</ResponseField>
+
+<ResponseField name="time" type="integer">
+  Execution timestamp
+</ResponseField>
+
+---
+
+### Close all positions
+
+<CodeGroup>
+```php PHP
+<?php
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\TradeApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$userLogin = "12345";
+
+try {
+    $apiInstance->closeAllUserLoginDelete($userLogin);
+    echo "All positions closed successfully for user " . $userLogin;
+} catch (Exception $e) {
+    echo 'Exception: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Closes all open positions for a user account at current market prices.
+
+**HTTP Method:** `DELETE`
+
+**Endpoint:** `/close_all/{user_login}`
+
+**Authentication:** Required
+
+#### Parameters
+
+<ParamField path="user_login" type="string" required>
+  User login identifier whose positions should be closed
+</ParamField>
+
+#### Returns
+
+**Type:** `void`
+
+Returns no content on success (HTTP 200).
+
+<Warning>
+This action immediately closes ALL open positions for the user at current market prices. This cannot be undone. Use with extreme caution.
+</Warning>
+
+## Use cases
+
+### Calculate total exposure
+
+```php
+$positions = $apiInstance->positionsUserLoginGet($userLogin);
+
+$totalLongVolume = 0;
+$totalShortVolume = 0;
+
+foreach ($positions as $position) {
+    if ($position->getType() == 0) { // Buy
+        $totalLongVolume += $position->getVolume();
+    } else { // Sell
+        $totalShortVolume += $position->getVolume();
+    }
+}
+
+echo "Long exposure: " . $totalLongVolume . " lots\n";
+echo "Short exposure: " . $totalShortVolume . " lots\n";
+```
+
+### Monitor trading performance
+
+```php
+$deals = $apiInstance->dealsUserLoginGet($userLogin, "30");
+
+$winningTrades = 0;
+$losingTrades = 0;
+$totalProfit = 0;
+$totalLoss = 0;
+
+foreach ($deals as $deal) {
+    $profit = $deal->getProfit();
+    if ($profit > 0) {
+        $winningTrades++;
+        $totalProfit += $profit;
+    } else if ($profit < 0) {
+        $losingTrades++;
+        $totalLoss += abs($profit);
+    }
+}
+
+$winRate = ($winningTrades / count($deals)) * 100;
+echo "Win rate: " . number_format($winRate, 2) . "%\n";
+echo "Profit factor: " . ($totalProfit / $totalLoss) . "\n";
+```
+
+### Risk management
+
+```php
+$positions = $apiInstance->positionsUserLoginGet($userLogin);
+$account = $accountApi->accountLoginGet($userLogin);
+
+$totalProfitLoss = 0;
+foreach ($positions as $position) {
+    $totalProfitLoss += $position->getProfit();
+}
+
+// Close all if drawdown exceeds 20%
+$drawdownPercent = ($totalProfitLoss / $account->getBalance()) * 100;
+if ($drawdownPercent < -20) {
+    $apiInstance->closeAllUserLoginDelete($userLogin);
+    echo "Emergency stop: All positions closed due to drawdown";
+}
+```
+
+## Async methods
+
+All methods provide asynchronous versions:
+
+- `positionsUserLoginGetAsync()`
+- `ordersUserLoginGetAsync()`
+- `dealsUserLoginGetAsync()`
+- `closeAllUserLoginDeleteAsync()`
+
+Example:
+
+```php
+$promise = $apiInstance->positionsUserLoginGetAsync($userLogin);
+
+$promise->then(
+    function ($positions) {
+        echo "Found " . count($positions) . " open positions";
+    },
+    function ($exception) {
+        echo "Error: " . $exception->getMessage();
+    }
+);
+```
+
+## Error responses
+
+- **400 Bad Request**: Invalid parameters or no positions to close
+- **401 Unauthorized**: Missing or invalid authentication token
+- **404 Not Found**: User not found
+- **500 Internal Server Error**: Server error during operation
+
+## Best practices
+
+1. **Regular monitoring**: Poll positions regularly to track open trades
+2. **Historical analysis**: Use deals data to analyze trading performance
+3. **Risk limits**: Implement automated risk management based on position data
+4. **Emergency procedures**: Use close all sparingly and only in emergency situations
+5. **Time ranges**: Use appropriate date ranges when querying historical data to optimize performance
+
+<Tip>
+For real-time monitoring of multiple accounts, use async methods to query positions in parallel.
+</Tip>

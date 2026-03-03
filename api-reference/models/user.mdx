@@ -1,0 +1,108 @@
+---
+title: User
+description: User account information and profile data
+---
+
+The User model represents a trading account user in the MT5 system. It contains all personal information, account settings, and trading permissions for a user.
+
+## Properties
+
+<ResponseField name="login" type="integer">
+  The unique user login identifier. This is the primary identifier for the trading account.
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  The full name of the user. This field is required when creating a new user.
+</ResponseField>
+
+<ResponseField name="group" type="string" required>
+  The trading group assigned to this user. Groups define trading conditions, leverage, and other settings. This field is required.
+</ResponseField>
+
+<ResponseField name="leverage" type="integer">
+  The leverage ratio for this user's account (e.g., 100 for 1:100 leverage).
+</ResponseField>
+
+<ResponseField name="password" type="string">
+  The main password for the user account. Used for trading terminal access.
+</ResponseField>
+
+<ResponseField name="password_investor" type="string">
+  The investor (read-only) password. Allows viewing account information without trading permissions.
+</ResponseField>
+
+<ResponseField name="rights" type="integer">
+  User rights and permissions flags. Defines what actions the user can perform.
+</ResponseField>
+
+<ResponseField name="email" type="string" required>
+  The user's email address. This field is required for user creation and notifications.
+</ResponseField>
+
+<ResponseField name="city" type="string">
+  The city where the user resides.
+</ResponseField>
+
+<ResponseField name="phone" type="string">
+  The user's contact phone number.
+</ResponseField>
+
+<ResponseField name="phone_password" type="string">
+  Phone password for additional verification methods.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  The current status of the user account (e.g., active, disabled).
+</ResponseField>
+
+<ResponseField name="state" type="string">
+  The state or region where the user resides.
+</ResponseField>
+
+<ResponseField name="address" type="string">
+  The user's full street address.
+</ResponseField>
+
+<ResponseField name="comment" type="string">
+  Administrative comments or notes about this user account.
+</ResponseField>
+
+<ResponseField name="zipcode" type="string">
+  The postal/ZIP code for the user's address.
+</ResponseField>
+
+<ResponseField name="agent_account" type="integer">
+  The login ID of the agent or IB (Introducing Broker) associated with this user.
+</ResponseField>
+
+<ResponseField name="id_number" type="string">
+  Government-issued identification number or passport number.
+</ResponseField>
+
+<ResponseField name="reg_date" type="string">
+  The registration date when the user account was created. Typically in datetime string format.
+</ResponseField>
+
+## Example
+
+```json
+{
+  "login": 12345,
+  "name": "John Doe",
+  "group": "demo\\standard",
+  "leverage": 100,
+  "email": "john.doe@example.com",
+  "city": "New York",
+  "phone": "+1234567890",
+  "status": "active",
+  "state": "NY",
+  "address": "123 Main Street",
+  "zipcode": "10001",
+  "agent_account": 1001,
+  "reg_date": "2024-01-15T10:30:00Z"
+}
+```
+
+<Note>
+  The `name`, `group`, and `email` fields are required when creating a new user. All other fields are optional but recommended for complete user profiles.
+</Note>

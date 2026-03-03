@@ -1,0 +1,77 @@
+---
+title: Group
+description: Trading group configuration
+---
+
+The Group model represents a trading group in the MT5 system. Groups define trading conditions, settings, and parameters that apply to all users assigned to that group.
+
+## Properties
+
+<ResponseField name="name" type="string" required>
+  The unique name of the trading group. This field is required and serves as the identifier for the group. Group names often follow a hierarchical structure separated by backslashes (e.g., "demo\\standard").
+</ResponseField>
+
+<ResponseField name="currency" type="string">
+  The base currency for accounts in this group (e.g., "USD", "EUR", "GBP"). This determines the account's deposit currency.
+</ResponseField>
+
+<ResponseField name="default_leverage" type="integer">
+  The default leverage ratio assigned to new users in this group (e.g., 100 for 1:100 leverage, 500 for 1:500 leverage).
+</ResponseField>
+
+## Example
+
+```json
+{
+  "name": "demo\\standard",
+  "currency": "USD",
+  "default_leverage": 100
+}
+```
+
+## Common group structures
+
+<CodeGroup>
+```json Demo accounts
+{
+  "name": "demo\\standard",
+  "currency": "USD",
+  "default_leverage": 500
+}
+```
+
+```json Real accounts
+{
+  "name": "real\\standard",
+  "currency": "USD",
+  "default_leverage": 100
+}
+```
+
+```json VIP accounts
+{
+  "name": "real\\vip",
+  "currency": "USD",
+  "default_leverage": 200
+}
+```
+</CodeGroup>
+
+## Understanding groups
+
+Trading groups are essential for organizing users and applying consistent trading conditions. They control:
+
+- Default leverage settings
+- Account currency
+- Trading permissions and restrictions
+- Commission structures
+- Available symbols and trading instruments
+- Margin requirements
+
+<Note>
+  Group names in MT5 use a hierarchical structure with backslashes. When working with group names in your code, remember to escape backslashes properly (e.g., "demo\\\\standard" in JSON).
+</Note>
+
+<Tip>
+  You can organize groups by account type (demo/real), trading conditions (standard/VIP), or any custom hierarchy that suits your business needs.
+</Tip>

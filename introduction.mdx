@@ -1,0 +1,100 @@
+---
+title: Introduction
+description: A comprehensive PHP SDK for integrating with the MetaTrader 5 Manager API
+---
+
+## What is MT5 Manager API SDK?
+
+The MT5 Manager API SDK is a powerful PHP library that provides seamless integration with MetaTrader 5 Manager API. It enables you to programmatically manage trading accounts, execute operations, and interact with the MT5 server infrastructure through a clean, object-oriented interface.
+
+### What is MetaTrader 5?
+
+MetaTrader 5 (MT5) is a multi-asset trading platform used by brokers and traders worldwide. It supports trading in forex, stocks, futures, and other financial instruments. The Manager API allows brokers and system administrators to automate account management, risk management, and operational tasks.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get started in minutes with a simple example
+  </Card>
+  <Card title="User management" icon="users" href="/guides/user-management">
+    Learn how to create, update, and manage trading accounts
+  </Card>
+  <Card title="API reference" icon="code" href="/api-reference/basic-api">
+    Complete reference for all available endpoints
+  </Card>
+  <Card title="Trade operations" icon="chart-line" href="/guides/trading-operations">
+    Execute trades and manage positions
+  </Card>
+</CardGroup>
+
+## Key features
+
+The MT5 Manager API SDK provides comprehensive functionality for managing your MetaTrader 5 infrastructure:
+
+### User management
+- Create and configure trading accounts
+- Update user information and settings
+- Reset passwords and manage credentials
+- Delete accounts when needed
+- Query user details by login
+
+### Account operations
+- Deposit and withdraw funds
+- Check account balances and equity
+- View account trading history
+- Manage account leverage
+
+### Trade management
+- Retrieve user positions and orders
+- Access detailed deal history
+- Close individual or all positions
+- Monitor trading activity
+
+### Group and symbol management
+- List available trading groups
+- Retrieve group configurations
+- Get market symbols and specifications
+- Access symbol trading sessions
+
+### Authentication and security
+- Bearer token authentication
+- Secure connection to MT5 servers
+- Configurable timeout settings
+- Debug mode for development
+
+## Architecture
+
+The SDK is built on industry-standard components:
+
+- **PHP 7.4+ / 8.0+ compatibility**: Modern PHP support with type safety
+- **Guzzle HTTP client**: Reliable HTTP communication with the MT5 API
+- **PSR-4 autoloading**: Standard PHP autoloading for easy integration
+- **Auto-generated from OpenAPI**: Consistent API interface based on OpenAPI 3.0 specification
+
+<Note>
+The SDK uses Bearer token authentication. You must first call the initialization endpoint to obtain an access token before making any other API calls.
+</Note>
+
+## Use cases
+
+The MT5 Manager API SDK is ideal for:
+
+- **Broker platforms**: Automate account creation and management for your clients
+- **CRM integration**: Connect your customer relationship management system with MT5
+- **Risk management**: Build custom risk monitoring and control systems
+- **Reporting tools**: Generate custom reports and analytics from trading data
+- **Client portals**: Create self-service portals for account management
+- **API bridges**: Connect MT5 with other trading platforms or services
+
+## Next steps
+
+<Steps>
+  <Step title="Install the SDK">
+    Follow the [installation guide](/installation) to add the SDK to your project
+  </Step>
+  <Step title="Run the quickstart">
+    Complete the [quickstart guide](/quickstart) to make your first API call
+  </Step>
+  <Step title="Explore features">
+    Learn about specific operations in the guides section
+  </Step>
+</Steps>

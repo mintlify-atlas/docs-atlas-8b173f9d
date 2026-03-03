@@ -1,0 +1,85 @@
+---
+title: Account
+description: Trading account balance and margin information
+---
+
+The Account model represents the financial state of a trading account. It contains real-time information about balance, equity, margin, and open position metrics.
+
+## Properties
+
+<ResponseField name="login" type="integer" required>
+  The unique account login identifier. This field is required and identifies which account these metrics belong to.
+</ResponseField>
+
+<ResponseField name="balance" type="float">
+  The current account balance. This represents the total funds in the account, not including floating profit/loss from open positions.
+</ResponseField>
+
+<ResponseField name="profit" type="float">
+  The total floating profit or loss from all open positions. Positive values indicate profit, negative values indicate loss.
+</ResponseField>
+
+<ResponseField name="blocked_profit" type="float">
+  Profit that is currently blocked or reserved. This typically occurs with pending orders or specific trading restrictions.
+</ResponseField>
+
+<ResponseField name="blocked_commission" type="float">
+  Commission amount that is blocked or reserved for open positions.
+</ResponseField>
+
+<ResponseField name="leverage" type="float">
+  The current leverage ratio being used by the account (e.g., 100.0 for 1:100 leverage).
+</ResponseField>
+
+<ResponseField name="volume" type="float">
+  The total volume of open positions across all symbols, typically measured in lots.
+</ResponseField>
+
+<ResponseField name="equity" type="float">
+  The account equity, calculated as balance plus floating profit/loss. This represents the current value of the account.
+</ResponseField>
+
+<ResponseField name="margin" type="float">
+  The amount of margin currently used by open positions. This is the collateral required to maintain current positions.
+</ResponseField>
+
+<ResponseField name="margin_free" type="float">
+  The free margin available for opening new positions. Calculated as equity minus used margin.
+</ResponseField>
+
+<ResponseField name="margin_level" type="float">
+  The margin level percentage, calculated as (equity / margin) × 100. This indicates the health of the account's margin situation.
+</ResponseField>
+
+## Example
+
+```json
+{
+  "login": 12345,
+  "balance": 10000.00,
+  "profit": 250.50,
+  "blocked_profit": 0.00,
+  "blocked_commission": 0.00,
+  "leverage": 100.0,
+  "volume": 2.5,
+  "equity": 10250.50,
+  "margin": 2050.00,
+  "margin_free": 8200.50,
+  "margin_level": 500.02
+}
+```
+
+<Note>
+  Monitor the `margin_level` closely. If it drops below the stop-out level (typically 20-50%), positions may be automatically closed to prevent further losses.
+</Note>
+
+## Understanding margin calculations
+
+<Expandable title="Margin metrics explained">
+  - **Equity**: Your account value including unrealized profits/losses
+  - **Margin**: The collateral required for your current open positions
+  - **Free Margin**: Available funds for opening new positions
+  - **Margin Level**: A percentage showing account health (higher is safer)
+  
+  When margin level falls too low, you may receive a margin call or face automatic position closure (stop-out).
+</Expandable>

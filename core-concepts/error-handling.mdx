@@ -1,0 +1,586 @@
+---
+title: Error handling
+description: Learn how to catch, handle, and recover from errors when working with the MT5 Manager API SDK
+---
+
+The MT5 Manager API SDK uses exceptions to handle errors. All API methods can throw exceptions that you should catch and handle appropriately in your application.
+
+## ApiException class
+
+All API errors are represented by the `ApiException` class, which extends PHP's standard `Exception` class with additional context about HTTP responses.
+
+### Exception properties
+
+The `ApiException` class provides access to detailed error information:
+
+```php
+use D4T\MT5Sdk\ApiException;
+
+try {
+    $result = $userApi->userUserLoginGet('12345');
+    
+} catch (ApiException $e) {
+    // Get error message
+    $message = $e->getMessage();
+    
+    // Get HTTP status code
+    $statusCode = $e->getCode();
+    
+    // Get response headers
+    $headers = $e->getResponseHeaders();
+    
+    // Get response body
+    $body = $e->getResponseBody();
+    
+    // Get deserialized response object (if available)
+    $responseObject = $e->getResponseObject();
+    
+    echo "Error: {$message}\n";
+    echo "Status Code: {$statusCode}\n";
+}
+```
+
+### ApiException source code
+
+From `~/workspace/source/lib/ApiException.php:40-77`:
+
+```php
+class ApiException extends Exception
+{
+    /**
+     * The HTTP body of the server response either as Json or string.
+     *
+     * @var mixed
+     */
+    protected $responseBody;
+
+    /**
+     * The HTTP header of the server response.
+     *
+     * @var string[]|null
+     */
+    protected $responseHeaders;
+
+    /**
+     * The deserialized response object
+     *
+     * @var $responseObject;
+     */
+    protected $responseObject;
+
+    /**
+     * Constructor
+     *
+     * @param string        $message         Error message
+     * @param int           $code            HTTP status code
+     * @param string[]|null $responseHeaders HTTP response header
+     * @param mixed         $responseBody    HTTP decoded body of the server response either as \stdClass or string
+     */
+    public function __construct($message = "", $code = 0, $responseHeaders = [], $responseBody = null)
+    {
+        parent::__construct($message, $code);
+        $this->responseHeaders = $responseHeaders;
+        $this->responseBody = $responseBody;
+    }
+}
+```
+
+<ResponseField name="message" type="string">
+  Error message describing what went wrong
+</ResponseField>
+
+<ResponseField name="code" type="int">
+  HTTP status code (e.g., 400, 401, 404, 500)
+</ResponseField>
+
+<ResponseField name="responseHeaders" type="array">
+  HTTP response headers from the API server
+</ResponseField>
+
+<ResponseField name="responseBody" type="mixed">
+  Raw response body as JSON object or string
+</ResponseField>
+
+<ResponseField name="responseObject" type="object">
+  Deserialized response object if available
+</ResponseField>
+
+## Basic error handling
+
+Wrap API calls in try-catch blocks to handle errors gracefully:
+
+<CodeGroup>
+
+```php Simple error handling
+use D4T\MT5Sdk\ApiException;
+
+try {
+    $user = $userApi->userUserLoginGet('12345');
+    echo "User found: " . $user->getLogin() . "\n";
+    
+} catch (ApiException $e) {
+    echo "API Error: " . $e->getMessage() . "\n";
+    echo "Status Code: " . $e->getCode() . "\n";
+}
+```
+
+```php Detailed error handling
+use D4T\MT5Sdk\ApiException;
+
+try {
+    $user = $userApi->userUserLoginGet('12345');
+    echo "User found: " . $user->getLogin() . "\n";
+    
+} catch (ApiException $e) {
+    error_log(sprintf(
+        "API Error: %s (Status: %d)\nHeaders: %s\nBody: %s",
+        $e->getMessage(),
+        $e->getCode(),
+        json_encode($e->getResponseHeaders()),
+        $e->getResponseBody()
+    ));
+    
+    throw $e; // Re-throw if you can't handle it
+}
+```
+
+</CodeGroup>
+
+## Handling specific error types
+
+Handle different error scenarios based on HTTP status codes:
+
+```php
+use D4T\MT5Sdk\ApiException;
+
+try {
+    $result = $userApi->userUserLoginGet($login);
+    
+} catch (ApiException $e) {
+    switch ($e->getCode()) {
+        case 400:
+            // Bad request - invalid parameters
+            echo "Invalid request parameters: " . $e->getMessage() . "\n";
+            // Log details and show user-friendly message
+            break;
+            
+        case 401:
+            // Unauthorized - token expired or invalid
+            echo "Authentication failed. Please log in again.\n";
+            // Re-authenticate and retry
+            $this->reAuthenticate();
+            break;
+            
+        case 404:
+            // Not found - resource doesn't exist
+            echo "User not found: {$login}\n";
+            // Handle missing resource
+            break;
+            
+        case 429:
+            // Too many requests - rate limit exceeded
+            echo "Rate limit exceeded. Please try again later.\n";
+            // Implement backoff strategy
+            sleep(60);
+            break;
+            
+        case 500:
+        case 502:
+        case 503:
+            // Server errors - temporary issues
+            echo "Server error. Retrying...\n";
+            // Implement retry logic
+            $this->retryWithBackoff($e);
+            break;
+            
+        default:
+            // Unknown error
+            error_log("Unexpected API error: " . $e->getMessage());
+            throw $e;
+    }
+}
+```
+
+<Note>
+  HTTP status codes follow standard REST conventions. 4xx errors indicate client issues, while 5xx errors indicate server problems.
+</Note>
+
+## Common error scenarios
+
+### Authentication errors
+
+Handle authentication failures and token expiration:
+
+```php
+use D4T\MT5Sdk\ApiException;
+use D4T\MT5Sdk\MT5Manager\BasicApi;
+
+class MT5ApiClient
+{
+    private $config;
+    private $basicApi;
+    private $token;
+    
+    public function authenticate($server, $login, $password)
+    {
+        try {
+            $result = $this->basicApi->initGet($server, $login, $password);
+            
+            $this->token = $result->getToken();
+            $this->config->setAccessToken($this->token);
+            
+            if (empty($this->token)) {
+                throw new Exception('Failed to obtain authentication token');
+            }
+            
+            return true;
+            
+        } catch (ApiException $e) {
+            if ($e->getCode() === 401) {
+                throw new Exception('Invalid credentials: ' . $e->getMessage());
+            } elseif ($e->getCode() >= 500) {
+                throw new Exception('Server error during authentication: ' . $e->getMessage());
+            } else {
+                throw new Exception('Authentication failed: ' . $e->getMessage());
+            }
+        }
+    }
+    
+    public function makeAuthenticatedRequest(callable $apiCall)
+    {
+        try {
+            return $apiCall();
+            
+        } catch (ApiException $e) {
+            if ($e->getCode() === 401) {
+                // Token expired - re-authenticate
+                error_log('Token expired, re-authenticating...');
+                $this->authenticate(
+                    getenv('MT5_SERVER'),
+                    getenv('MT5_LOGIN'),
+                    getenv('MT5_PASSWORD')
+                );
+                
+                // Retry the request
+                return $apiCall();
+            }
+            
+            throw $e;
+        }
+    }
+}
+
+// Usage
+$client = new MT5ApiClient();
+$client->authenticate(
+    getenv('MT5_SERVER'),
+    getenv('MT5_LOGIN'),
+    getenv('MT5_PASSWORD')
+);
+
+$user = $client->makeAuthenticatedRequest(function() use ($userApi) {
+    return $userApi->userUserLoginGet('12345');
+});
+```
+
+### Connection errors
+
+Handle network and connection issues:
+
+```php
+use D4T\MT5Sdk\ApiException;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ConnectException;
+
+try {
+    $result = $apiInstance->initGet($server, $login, $password, 5000);
+    
+} catch (ConnectException $e) {
+    // Network connection failed
+    echo "Cannot connect to MT5 server: " . $e->getMessage() . "\n";
+    echo "Please check:\n";
+    echo "  - Server address is correct\n";
+    echo "  - Server is running and accessible\n";
+    echo "  - Network connectivity\n";
+    
+} catch (RequestException $e) {
+    // HTTP request failed
+    echo "Request failed: " . $e->getMessage() . "\n";
+    if ($e->hasResponse()) {
+        echo "Response code: " . $e->getResponse()->getStatusCode() . "\n";
+    }
+    
+} catch (ApiException $e) {
+    // API-specific error
+    echo "API error: " . $e->getMessage() . "\n";
+}
+```
+
+### Validation errors
+
+Handle invalid input parameters:
+
+```php
+use D4T\MT5Sdk\ApiException;
+
+try {
+    // Create user with invalid data
+    $result = $userApi->userAddPost($userData);
+    
+} catch (InvalidArgumentException $e) {
+    // Required parameter missing
+    echo "Missing required parameter: " . $e->getMessage() . "\n";
+    
+} catch (ApiException $e) {
+    if ($e->getCode() === 400) {
+        // Server-side validation error
+        $body = $e->getResponseBody();
+        
+        if (is_object($body)) {
+            echo "Validation errors:\n";
+            foreach ($body->errors ?? [] as $field => $errors) {
+                echo "  {$field}: " . implode(', ', $errors) . "\n";
+            }
+        } else {
+            echo "Invalid request: " . $e->getMessage() . "\n";
+        }
+    }
+}
+```
+
+## Error handling in BasicApi
+
+The SDK internally handles errors when making requests. From `~/workspace/source/lib/MT5Manager/BasicApi.php:128-154`:
+
+```php
+try {
+    $options = $this->createHttpClientOption();
+    try {
+        $response = $this->client->send($request, $options);
+    } catch (RequestException $e) {
+        throw new ApiException(
+            "[{$e->getCode()}] {$e->getMessage()}",
+            $e->getCode(),
+            $e->getResponse() ? $e->getResponse()->getHeaders() : null,
+            $e->getResponse() ? $e->getResponse()->getBody()->getContents() : null
+        );
+    }
+
+    $statusCode = $response->getStatusCode();
+
+    if ($statusCode < 200 || $statusCode > 299) {
+        throw new ApiException(
+            sprintf(
+                '[%d] Error connecting to the API (%s)',
+                $statusCode,
+                $request->getUri()
+            ),
+            $statusCode,
+            $response->getHeaders(),
+            $response->getBody()
+        );
+    }
+```
+
+<Warning>
+  Always catch `ApiException` and `InvalidArgumentException` when calling API methods. Uncaught exceptions will crash your application.
+</Warning>
+
+## Retry logic with exponential backoff
+
+Implement retry logic for transient errors:
+
+```php
+use D4T\MT5Sdk\ApiException;
+
+class RetryableApiClient
+{
+    private $maxRetries = 3;
+    private $baseDelay = 1000; // milliseconds
+    
+    public function callWithRetry(callable $apiCall)
+    {
+        $attempt = 0;
+        
+        while ($attempt < $this->maxRetries) {
+            try {
+                return $apiCall();
+                
+            } catch (ApiException $e) {
+                $attempt++;
+                
+                // Only retry on server errors or network issues
+                $shouldRetry = $e->getCode() >= 500 || $e->getCode() === 0;
+                
+                if (!$shouldRetry || $attempt >= $this->maxRetries) {
+                    throw $e;
+                }
+                
+                // Calculate delay with exponential backoff
+                $delay = $this->baseDelay * pow(2, $attempt - 1);
+                
+                error_log(sprintf(
+                    "API call failed (attempt %d/%d), retrying in %dms: %s",
+                    $attempt,
+                    $this->maxRetries,
+                    $delay,
+                    $e->getMessage()
+                ));
+                
+                usleep($delay * 1000); // Convert to microseconds
+            }
+        }
+    }
+}
+
+// Usage
+$retryClient = new RetryableApiClient();
+
+$user = $retryClient->callWithRetry(function() use ($userApi) {
+    return $userApi->userUserLoginGet('12345');
+});
+```
+
+## Logging errors
+
+Implement comprehensive error logging:
+
+```php
+use D4T\MT5Sdk\ApiException;
+use Psr\Log\LoggerInterface;
+
+class LoggingApiClient
+{
+    private $logger;
+    private $userApi;
+    
+    public function __construct(UserApi $userApi, LoggerInterface $logger)
+    {
+        $this->userApi = $userApi;
+        $this->logger = $logger;
+    }
+    
+    public function getUser($login)
+    {
+        try {
+            $user = $this->userApi->userUserLoginGet($login);
+            
+            $this->logger->info('User retrieved successfully', [
+                'login' => $login,
+                'user_id' => $user->getLogin()
+            ]);
+            
+            return $user;
+            
+        } catch (ApiException $e) {
+            $context = [
+                'login' => $login,
+                'status_code' => $e->getCode(),
+                'message' => $e->getMessage(),
+                'response_headers' => $e->getResponseHeaders(),
+                'response_body' => $e->getResponseBody(),
+            ];
+            
+            if ($e->getCode() >= 500) {
+                $this->logger->error('Server error when retrieving user', $context);
+            } elseif ($e->getCode() === 404) {
+                $this->logger->warning('User not found', $context);
+            } else {
+                $this->logger->error('API error when retrieving user', $context);
+            }
+            
+            throw $e;
+        }
+    }
+}
+```
+
+## Graceful degradation
+
+Provide fallback behavior when API calls fail:
+
+```php
+use D4T\MT5Sdk\ApiException;
+
+class UserService
+{
+    private $userApi;
+    private $cache;
+    
+    public function getUser($login, $useCache = true)
+    {
+        try {
+            // Try to get user from API
+            $user = $this->userApi->userUserLoginGet($login);
+            
+            // Cache the result
+            if ($useCache) {
+                $this->cache->set("user:{$login}", $user, 300); // 5 minutes
+            }
+            
+            return $user;
+            
+        } catch (ApiException $e) {
+            // Log the error
+            error_log("Failed to fetch user {$login}: " . $e->getMessage());
+            
+            // Try to use cached data
+            if ($useCache && $cachedUser = $this->cache->get("user:{$login}")) {
+                error_log("Using cached user data for {$login}");
+                return $cachedUser;
+            }
+            
+            // If we can't recover, throw the exception
+            throw new Exception(
+                "Unable to retrieve user {$login}: " . $e->getMessage(),
+                0,
+                $e
+            );
+        }
+    }
+}
+```
+
+## Best practices
+
+<Steps>
+  <Step title="Always catch exceptions">
+    Wrap all API calls in try-catch blocks to handle errors gracefully.
+  </Step>
+  
+  <Step title="Handle specific error codes">
+    Use switch statements to handle different HTTP status codes appropriately.
+  </Step>
+  
+  <Step title="Log error details">
+    Log error messages, status codes, and response bodies for debugging.
+  </Step>
+  
+  <Step title="Implement retry logic">
+    Retry transient errors (5xx) with exponential backoff.
+  </Step>
+  
+  <Step title="Provide user feedback">
+    Show user-friendly error messages instead of technical details.
+  </Step>
+  
+  <Step title="Monitor error rates">
+    Track error rates to identify issues with your integration.
+  </Step>
+</Steps>
+
+<Tip>
+  Use monitoring tools to track API errors in production. High error rates may indicate configuration issues or API service problems.
+</Tip>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/core-concepts/authentication">
+    Handle authentication errors and token expiration
+  </Card>
+  
+  <Card title="Configuration" icon="gear" href="/core-concepts/configuration">
+    Configure debugging and logging options
+  </Card>
+</CardGroup>

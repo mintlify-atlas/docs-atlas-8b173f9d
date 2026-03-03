@@ -1,0 +1,470 @@
+---
+title: Groups and symbols
+description: Understand and manage MT5 groups and trading symbols using the Manager API SDK
+---
+
+Groups and symbols are fundamental configurations in MetaTrader 5. Groups define trading conditions for users, while symbols represent the financial instruments available for trading.
+
+## Overview
+
+In MetaTrader 5:
+- **Groups** define trading conditions, margin requirements, and permissions for users
+- **Symbols** represent tradable instruments like currency pairs, stocks, and commodities
+
+Understanding these configurations is essential for proper user and account management.
+
+<Info>
+Groups and symbols are typically configured in the MT5 Server but can be queried through the Manager API for integration purposes.
+</Info>
+
+## Understanding groups
+
+Groups in MT5 are templates that define:
+- Trading permissions and restrictions
+- Leverage settings
+- Currency denomination
+- Commission structures
+- Margin requirements
+- Allowed trading symbols
+
+### Common group types
+
+<CardGroup cols={2}>
+  <Card title="Demo groups" icon="flask">
+    Used for demo accounts with virtual money. Typically named `demo\demoforex` or similar.
+  </Card>
+  <Card title="Real groups" icon="dollar-sign">
+    Used for live trading accounts with real money. Examples: `real\standard`, `real\pro`.
+  </Card>
+  <Card title="Cent groups" icon="coins">
+    Accounts where 1 lot = $10 instead of $100, useful for small accounts.
+  </Card>
+  <Card title="VIP groups" icon="crown">
+    Premium accounts with better trading conditions, lower spreads, or reduced commissions.
+  </Card>
+</CardGroup>
+
+## Retrieving groups
+
+Use the `GroupApi` to query available groups and their configurations.
+
+### Get all groups
+
+Retrieve a list of all available group names:
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\GroupApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+try {
+    $result = $apiInstance->groupsGet();
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling GroupApi->groupsGet: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+
+**Returns:** An array of group names (strings).
+
+### Get specific group details
+
+Retrieve detailed information about a specific group:
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\GroupApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$group_name = "group_name_example";
+
+try {
+    $result = $apiInstance->groupGroupNameGet($group_name);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling GroupApi->groupGroupNameGet: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+
+### Group data structure
+
+The `Group` model contains:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Group name (e.g., "demo\\demoforex") |
+| `currency` | string | Base currency (e.g., "USD", "EUR") |
+| `default_leverage` | int | Default leverage for new accounts |
+
+<Note>
+Group names often contain backslashes as separators (e.g., `demo\demoforex`). Always escape these properly in your code.
+</Note>
+
+## Understanding symbols
+
+Symbols represent the financial instruments available for trading. Each symbol has specific trading conditions and specifications.
+
+### Symbol categories
+
+<Tabs>
+  <Tab title="Currency pairs">
+    Forex symbols represent currency pairs:
+    - **Majors**: EURUSD, GBPUSD, USDJPY
+    - **Minors**: EURGBP, EURJPY, GBPJPY
+    - **Exotics**: USDTRY, USDZAR, USDMXN
+
+    Format: `BASECURRENCY + QUOTECURRENCY`
+  </Tab>
+
+  <Tab title="Metals">
+    Precious metals trading:
+    - **XAUUSD**: Gold vs US Dollar
+    - **XAGUSD**: Silver vs US Dollar
+    - **XPTUSD**: Platinum vs US Dollar
+
+    Typically prefixed with "X" following ISO standards.
+  </Tab>
+
+  <Tab title="Indices">
+    Stock market indices:
+    - **US30**: Dow Jones Industrial Average
+    - **SPX500**: S&P 500
+    - **NAS100**: NASDAQ 100
+    - **UK100**: FTSE 100
+
+    Often displayed with suffixes based on contract type.
+  </Tab>
+
+  <Tab title="Commodities">
+    Energy and agricultural products:
+    - **USOIL**: US Crude Oil (WTI)
+    - **UKOIL**: UK Crude Oil (Brent)
+    - **NATGAS**: Natural Gas
+
+    Prices vary based on global supply and demand.
+  </Tab>
+</Tabs>
+
+## Retrieving symbols
+
+Use the `SymbolApi` to query available trading symbols and their specifications.
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\SymbolApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+try {
+    $result = $apiInstance->symbolsGet();
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling SymbolApi->symbolsGet: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+
+### Symbol data structure
+
+The `Symbol` model provides comprehensive trading specifications:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Symbol name (e.g., "EURUSD") |
+| `path` | string | Symbol group path |
+| `description` | string | Full description |
+| `currency_base` | string | Base currency |
+| `spread` | float | Current spread in points |
+| `digits` | int | Price decimal places |
+| `contract_size` | float | Contract size (e.g., 100000 for forex) |
+| `tick_size` | float | Minimum price movement |
+| `tick_value` | float | Value of one tick |
+| `vol_min` | int | Minimum volume (lots) |
+| `vol_max` | int | Maximum volume (lots) |
+| `vol_step` | int | Volume step |
+| `vol_limit` | int | Position volume limit |
+| `swap_mode` | int | Swap calculation mode |
+| `swap_long` | float | Swap for long positions |
+| `swap_short` | float | Swap for short positions |
+| `calc_mode` | int | Profit calculation mode |
+| `trade_sessions` | array | Trading session schedules |
+
+## Working with symbol specifications
+
+Here's how to interpret key symbol fields:
+
+<Steps>
+  <Step title="Understand contract size">
+    The `contract_size` determines the value of 1 lot:
+
+    ```php
+    // For EURUSD with contract_size = 100000
+    // 1 lot = 100,000 EUR
+    // 0.1 lot = 10,000 EUR
+    // 0.01 lot = 1,000 EUR
+    ```
+  </Step>
+
+  <Step title="Calculate pip value">
+    Use `tick_value` and `tick_size` to calculate pip value:
+
+    ```php
+    $symbol = $apiInstance->symbolsGet()[0]; // Get first symbol
+    $pipValue = $symbol->getTickValue();
+    $pipSize = $symbol->getTickSize();
+    
+    echo "One pip = $pipValue per lot\n";
+    echo "Minimum price change = $pipSize\n";
+    ```
+  </Step>
+
+  <Step title="Check trading limits">
+    Validate volume constraints:
+
+    ```php
+    function isValidVolume($volume, $symbol) {
+        if ($volume < $symbol->getVolMin()) {
+            return false; // Below minimum
+        }
+        if ($volume > $symbol->getVolMax()) {
+            return false; // Above maximum
+        }
+        // Check if volume is a valid step
+        $remainder = fmod($volume, $symbol->getVolStep());
+        return $remainder == 0;
+    }
+    ```
+  </Step>
+</Steps>
+
+## Swap calculations
+
+Swaps (rollover interest) are charged for positions held overnight.
+
+### Swap modes
+
+The `swap_mode` field determines how swaps are calculated:
+
+- `0`: Points (in symbol points)
+- `1`: Base currency
+- `2`: Interest (percentage annual rate)
+- `3`: Margin currency
+
+### Example swap calculation
+
+```php
+function calculateSwap($position, $symbol) {
+    $volume = $position->getVolume();
+    $isLong = $position->getAction() == 0;
+    
+    $swapRate = $isLong 
+        ? $symbol->getSwapLong() 
+        : $symbol->getSwapShort();
+    
+    // Simplified calculation for points mode
+    if ($symbol->getSwapMode() == 0) {
+        $swapPoints = $swapRate;
+        $swapValue = $swapPoints * $symbol->getTickValue() * $volume;
+        return $swapValue;
+    }
+    
+    return 0; // Other modes require more complex calculations
+}
+```
+
+<Info>
+Swaps can be positive (you earn) or negative (you pay). Islamic accounts typically have zero swap.
+</Info>
+
+## Complete example: Group and symbol analysis
+
+Here's a comprehensive example that analyzes groups and symbols:
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$groupApi = new D4T\MT5Sdk\MT5Manager\GroupApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$symbolApi = new D4T\MT5Sdk\MT5Manager\SymbolApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+try {
+    // 1. List all available groups
+    echo "=== Available Groups ===\n";
+    $groups = $groupApi->groupsGet();
+    
+    foreach ($groups as $groupName) {
+        echo "- $groupName\n";
+    }
+    echo "\n";
+    
+    // 2. Get details for first group
+    if (!empty($groups)) {
+        $groupDetails = $groupApi->groupGroupNameGet($groups[0]);
+        echo "=== Group Details: {$groups[0]} ===\n";
+        echo "Currency: " . $groupDetails->getCurrency() . "\n";
+        echo "Default Leverage: 1:" . $groupDetails->getDefaultLeverage() . "\n\n";
+    }
+    
+    // 3. List all symbols
+    echo "=== Available Symbols ===\n";
+    $symbols = $symbolApi->symbolsGet();
+    
+    // Categorize symbols
+    $forex = [];
+    $metals = [];
+    $other = [];
+    
+    foreach ($symbols as $symbol) {
+        $name = $symbol->getName();
+        
+        if (in_array($symbol->getCurrencyBase(), ['EUR', 'GBP', 'USD', 'JPY', 'AUD', 'CAD', 'CHF', 'NZD'])) {
+            $forex[] = $name;
+        } elseif (strpos($name, 'XAU') !== false || strpos($name, 'XAG') !== false) {
+            $metals[] = $name;
+        } else {
+            $other[] = $name;
+        }
+    }
+    
+    echo "Forex pairs: " . count($forex) . "\n";
+    echo "Metals: " . count($metals) . "\n";
+    echo "Other instruments: " . count($other) . "\n\n";
+    
+    // 4. Analyze a specific symbol (e.g., EURUSD)
+    foreach ($symbols as $symbol) {
+        if ($symbol->getName() == 'EURUSD') {
+            echo "=== EURUSD Specifications ===\n";
+            echo "Description: " . $symbol->getDescription() . "\n";
+            echo "Contract size: " . $symbol->getContractSize() . "\n";
+            echo "Digits: " . $symbol->getDigits() . "\n";
+            echo "Spread: " . $symbol->getSpread() . " points\n";
+            echo "Min volume: " . $symbol->getVolMin() . " lots\n";
+            echo "Max volume: " . $symbol->getVolMax() . " lots\n";
+            echo "Volume step: " . $symbol->getVolStep() . " lots\n";
+            echo "Swap long: " . $symbol->getSwapLong() . "\n";
+            echo "Swap short: " . $symbol->getSwapShort() . "\n";
+            break;
+        }
+    }
+    
+} catch (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+}
+?>
+```
+
+## Best practices
+
+<Accordion title="Cache group and symbol data">
+  Groups and symbols don't change frequently. Cache this data to reduce API calls:
+
+  ```php
+  function getCachedSymbols($symbolApi, $cacheFile = 'symbols_cache.json', $ttl = 3600) {
+      if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $ttl) {
+          return json_decode(file_get_contents($cacheFile), true);
+      }
+      
+      $symbols = $symbolApi->symbolsGet();
+      file_put_contents($cacheFile, json_encode($symbols));
+      
+      return $symbols;
+  }
+  ```
+</Accordion>
+
+<Accordion title="Validate group before user creation">
+  Always verify the group exists before creating a user:
+
+  ```php
+  $groups = $groupApi->groupsGet();
+  $targetGroup = "demo\\demoforex";
+  
+  if (!in_array($targetGroup, $groups)) {
+      throw new Exception("Group '$targetGroup' does not exist");
+  }
+  
+  // Proceed with user creation
+  ```
+</Accordion>
+
+<Accordion title="Build a symbol lookup table">
+  Create a quick lookup for symbol specifications:
+
+  ```php
+  function buildSymbolLookup($symbols) {
+      $lookup = [];
+      
+      foreach ($symbols as $symbol) {
+          $lookup[$symbol->getName()] = [
+              'contract_size' => $symbol->getContractSize(),
+              'digits' => $symbol->getDigits(),
+              'tick_value' => $symbol->getTickValue(),
+              'vol_min' => $symbol->getVolMin(),
+              'vol_max' => $symbol->getVolMax(),
+          ];
+      }
+      
+      return $lookup;
+  }
+  
+  // Usage
+  $lookup = buildSymbolLookup($symbolApi->symbolsGet());
+  $eurusdSpecs = $lookup['EURUSD'];
+  ```
+</Accordion>
+
+## Error handling
+
+Handle errors when querying groups and symbols:
+
+```php
+try {
+    $group = $groupApi->groupGroupNameGet($groupName);
+} catch (\D4T\MT5Sdk\ApiException $e) {
+    if ($e->getCode() == 404) {
+        echo "Group not found: $groupName\n";
+    } else {
+        echo "API Error: " . $e->getMessage() . "\n";
+    }
+} catch (Exception $e) {
+    echo "Error: " . $e->getMessage() . "\n";
+}
+```
+
+## Next steps
+
+- Learn about [user management](/guides/user-management) to assign users to groups
+- Explore [trading operations](/guides/trading-operations) to work with symbols
+- Review [account operations](/guides/account-operations) for balance management

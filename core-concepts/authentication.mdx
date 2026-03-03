@@ -1,0 +1,277 @@
+---
+title: Authentication
+description: Learn how to authenticate with the MT5 Manager API using bearer token authentication
+---
+
+The MT5 Manager API uses bearer token authentication to secure API requests. You must first obtain a token by initializing a connection to your MetaTrader 5 server, then use that token for all subsequent API calls.
+
+## How authentication works
+
+The authentication flow follows these steps:
+
+<Steps>
+  <Step title="Initialize connection">
+    Call the `initGet()` method with your MT5 server credentials to obtain a bearer token.
+  </Step>
+  
+  <Step title="Store the token">
+    Extract the token from the response and configure it in your API client.
+  </Step>
+  
+  <Step title="Make authenticated requests">
+    Use the configured token for all subsequent API operations.
+  </Step>
+</Steps>
+
+## Getting a bearer token
+
+To obtain a bearer token, use the `BasicApi::initGet()` method with your MetaTrader 5 server credentials:
+
+```php
+use D4T\MT5Sdk\MT5Manager\BasicApi;
+use GuzzleHttp\Client;
+
+// Create API instance
+$apiInstance = new BasicApi(
+    new Client()
+);
+
+// Initialize connection and get token
+try {
+    $result = $apiInstance->initGet(
+        '127.0.0.1:443',      // MetaTrader5 server IP with port
+        'manager_login',       // Manager login
+        'manager_password',    // Manager password
+        5000                   // Optional: Connection timeout in milliseconds
+    );
+    
+    // Extract the token from response
+    $token = $result->getToken();
+    $code = $result->getCode();
+    
+    echo "Authentication successful! Token: {$token}\n";
+    
+} catch (Exception $e) {
+    echo 'Authentication failed: ' . $e->getMessage();
+}
+```
+
+### Method signature
+
+The `initGet()` method is defined in `~/workspace/source/lib/MT5Manager/BasicApi.php:103-107`:
+
+```php
+public function initGet($server, $login, $password, $timeout = null)
+```
+
+<ParamField path="server" type="string" required>
+  MetaTrader5 server IP address with port. Example: `127.0.0.1:443`
+</ParamField>
+
+<ParamField path="login" type="string" required>
+  MetaTrader manager login credentials
+</ParamField>
+
+<ParamField path="password" type="string" required>
+  MetaTrader manager password
+</ParamField>
+
+<ParamField path="timeout" type="float">
+  Connection timeout in milliseconds. Optional parameter for controlling connection timeouts.
+</ParamField>
+
+### Return type
+
+The method returns an `InitReturnType` object with the following properties:
+
+<ResponseField name="code" type="int">
+  Response code indicating the status of the authentication request
+</ResponseField>
+
+<ResponseField name="token" type="string">
+  The bearer token to use for authenticated API requests
+</ResponseField>
+
+## Configuring the bearer token
+
+After obtaining a token, configure it in your API client for subsequent requests:
+
+<CodeGroup>
+
+```php Using Configuration object
+use D4T\MT5Sdk\Configuration;
+use D4T\MT5Sdk\MT5Manager\UserApi;
+use GuzzleHttp\Client;
+
+// Get token from initGet() first
+$token = $initResult->getToken();
+
+// Configure bearer token
+$config = Configuration::getDefaultConfiguration()
+    ->setAccessToken($token);
+
+// Use configured client for API calls
+$userApi = new UserApi(
+    new Client(),
+    $config
+);
+
+// Now you can make authenticated requests
+$user = $userApi->userUserLoginGet('12345');
+```
+
+```php Setting token directly
+use D4T\MT5Sdk\Configuration;
+
+// Create configuration instance
+$config = new Configuration();
+
+// Set the bearer token
+$config->setAccessToken('your-token-here');
+
+// The token is automatically included in request headers
+// as: Authorization: Bearer {token}
+```
+
+</CodeGroup>
+
+## How bearer authentication is applied
+
+The SDK automatically adds the bearer token to request headers. From `~/workspace/source/lib/MT5Manager/BasicApi.php:616-619`:
+
+```php
+// this endpoint requires Bearer token
+if ($this->config->getAccessToken() !== null) {
+    $headers['Authorization'] = 'Bearer ' . $this->config->getAccessToken();
+}
+```
+
+All authenticated endpoints will include the `Authorization` header with your bearer token automatically.
+
+<Note>
+  The `/init/` endpoint does not require authentication, but all other API endpoints require a valid bearer token.
+</Note>
+
+## Security best practices
+
+Follow these security guidelines when working with authentication:
+
+<Warning>
+  Never commit credentials or tokens to version control. Use environment variables or secure configuration management.
+</Warning>
+
+### Store credentials securely
+
+```php
+// ✅ Good: Use environment variables
+$server = getenv('MT5_SERVER');
+$login = getenv('MT5_MANAGER_LOGIN');
+$password = getenv('MT5_MANAGER_PASSWORD');
+
+// ❌ Bad: Hardcoded credentials
+$server = '127.0.0.1:443';
+$login = 'my_login';
+$password = 'my_password';
+```
+
+### Validate tokens before use
+
+```php
+try {
+    $result = $apiInstance->initGet($server, $login, $password);
+    
+    $token = $result->getToken();
+    
+    // Validate token exists
+    if (empty($token)) {
+        throw new Exception('Failed to obtain authentication token');
+    }
+    
+    // Verify authentication with ping
+    $config = Configuration::getDefaultConfiguration()
+        ->setAccessToken($token);
+    
+    $basicApi = new BasicApi(new Client(), $config);
+    $pingResult = $basicApi->pingGet();
+    
+    echo "Authentication verified successfully\n";
+    
+} catch (Exception $e) {
+    error_log('Authentication error: ' . $e->getMessage());
+    // Handle error appropriately
+}
+```
+
+### Handle token expiration
+
+```php
+use D4T\MT5Sdk\ApiException;
+
+try {
+    // Make API request
+    $result = $userApi->userUserLoginGet('12345');
+    
+} catch (ApiException $e) {
+    // Check for authentication errors
+    if ($e->getCode() === 401) {
+        // Token expired or invalid - re-authenticate
+        $newToken = $basicApi->initGet($server, $login, $password);
+        $config->setAccessToken($newToken->getToken());
+        
+        // Retry the request
+        $result = $userApi->userUserLoginGet('12345');
+    } else {
+        throw $e;
+    }
+}
+```
+
+### Use HTTPS in production
+
+```php
+// Configure API host with HTTPS
+$config = new Configuration();
+$config->setHost('https://your-mt5-api.com/v1');
+$config->setAccessToken($token);
+```
+
+<Note>
+  Always use HTTPS in production to ensure credentials and tokens are transmitted securely.
+</Note>
+
+## Testing authentication
+
+You can verify your authentication is working by using the ping endpoint:
+
+```php
+use D4T\MT5Sdk\MT5Manager\BasicApi;
+use D4T\MT5Sdk\Configuration;
+use GuzzleHttp\Client;
+
+// Configure with your token
+$config = Configuration::getDefaultConfiguration()
+    ->setAccessToken($token);
+
+$basicApi = new BasicApi(new Client(), $config);
+
+try {
+    $result = $basicApi->pingGet();
+    echo "Ping successful - authentication working\n";
+    print_r($result);
+    
+} catch (Exception $e) {
+    echo "Authentication failed: " . $e->getMessage();
+}
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/core-concepts/configuration">
+    Learn how to configure the API client with custom settings
+  </Card>
+  
+  <Card title="Error handling" icon="triangle-exclamation" href="/core-concepts/error-handling">
+    Understand how to handle authentication errors and exceptions
+  </Card>
+</CardGroup>

@@ -1,0 +1,75 @@
+---
+title: Position
+description: Open trading position information
+---
+
+The Position model represents an open trading position in the MT5 system. It contains information about the trade action, symbol, volume, and current status.
+
+## Properties
+
+<ResponseField name="action" type="integer">
+  The position action type indicating whether this is a buy or sell position.
+  
+  **Allowed values:**
+  - `0` - Buy position
+  - `1` - Sell position
+</ResponseField>
+
+<ResponseField name="volume" type="float">
+  The volume of the position in lots. For example, 1.0 represents one standard lot.
+</ResponseField>
+
+<ResponseField name="symbol" type="string">
+  The trading symbol for this position (e.g., "EURUSD", "GOLD", "US30").
+</ResponseField>
+
+<ResponseField name="price" type="float">
+  The opening price at which this position was entered.
+</ResponseField>
+
+<ResponseField name="time" type="string">
+  The timestamp when the position was opened. Typically in datetime string format.
+</ResponseField>
+
+<ResponseField name="id" type="integer">
+  The unique identifier for this position. This is used to reference and manage the position.
+</ResponseField>
+
+## Example
+
+```json
+{
+  "action": 0,
+  "volume": 1.5,
+  "symbol": "EURUSD",
+  "price": 1.0850,
+  "time": "2024-01-15T14:30:00Z",
+  "id": 987654
+}
+```
+
+## Action types
+
+<CodeGroup>
+```json Buy Position
+{
+  "action": 0,
+  "symbol": "EURUSD",
+  "volume": 1.0,
+  "price": 1.0850
+}
+```
+
+```json Sell Position
+{
+  "action": 1,
+  "symbol": "GBPUSD",
+  "volume": 0.5,
+  "price": 1.2640
+}
+```
+</CodeGroup>
+
+<Note>
+  Positions are different from orders. A position represents an active trade, while an order is a pending instruction to enter or exit a position.
+</Note>

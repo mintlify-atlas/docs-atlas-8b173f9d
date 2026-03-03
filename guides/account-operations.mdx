@@ -1,0 +1,372 @@
+---
+title: Account operations
+description: Manage account balances, deposits, and withdrawals using the MT5 Manager API SDK
+---
+
+The Account API provides methods for managing trading account balances and retrieving account information. This includes deposit and withdrawal operations, as well as querying account metrics.
+
+## Overview
+
+Account operations allow you to:
+- Retrieve account information including balance, equity, margin, and leverage
+- Process deposits to add funds to user accounts
+- Process withdrawals to remove funds from user accounts
+- Monitor account health metrics like margin level and free margin
+
+<Info>
+Account operations are split between two API classes: `AccountApi` for retrieving account information and `UserApi` for deposit/withdrawal operations.
+</Info>
+
+## Retrieving account information
+
+Use the `AccountApi` to retrieve comprehensive account information for a specific user.
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\AccountApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$login = "login_example";
+
+try {
+    $result = $apiInstance->accountLoginGet($login);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling AccountApi->accountLoginGet: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+
+### Account information fields
+
+The `Account` model returns the following information:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `login` | int | User's login ID |
+| `balance` | float | Current account balance |
+| `profit` | float | Floating profit/loss from open positions |
+| `blocked_profit` | float | Profit blocked in pending orders |
+| `leverage` | float | Account leverage |
+| `volume` | float | Total trading volume |
+| `equity` | float | Account equity (balance + profit) |
+| `margin` | float | Margin used by open positions |
+| `margin_free` | float | Free margin available for trading |
+| `margin_level` | float | Margin level percentage |
+
+### Understanding account metrics
+
+<Tabs>
+  <Tab title="Balance vs Equity">
+    **Balance** is the total amount of funds in the account, not including floating profit/loss.
+
+    **Equity** is the current value of the account, calculated as:
+    ```
+    Equity = Balance + Profit - Loss
+    ```
+
+    Equity represents the actual value of the account if all positions were closed at current market prices.
+  </Tab>
+
+  <Tab title="Margin metrics">
+    **Margin** is the amount of funds locked as collateral for open positions.
+
+    **Free margin** is the amount available to open new positions:
+    ```
+    Free Margin = Equity - Margin
+    ```
+
+    **Margin level** indicates account health:
+    ```
+    Margin Level = (Equity / Margin) × 100%
+    ```
+
+    <Warning>
+    If margin level falls below the broker's stop-out level (typically 20-50%), positions may be automatically closed.
+    </Warning>
+  </Tab>
+
+  <Tab title="Volume">
+    **Volume** represents the total size of all open positions, typically measured in lots.
+
+    For example:
+    - 1.0 = 1 standard lot (100,000 units)
+    - 0.1 = 1 mini lot (10,000 units)
+    - 0.01 = 1 micro lot (1,000 units)
+  </Tab>
+</Tabs>
+
+## Processing deposits
+
+Use the `userDepositPost` method to add funds to a user's account. This creates a balance operation in the MT5 system.
+
+<Steps>
+  <Step title="Configure the API client">
+    ```php
+    <?php
+    require_once(__DIR__ . '/vendor/autoload.php');
+
+    $config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+        ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+    $apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+        new GuzzleHttp\Client(),
+        $config
+    );
+    ```
+  </Step>
+
+  <Step title="Prepare deposit data">
+    Create a `BalanceType` object with the deposit details:
+
+    ```php
+    $body = new \D4T\MT5Sdk\Models\BalanceType();
+    // Set properties:
+    // - login: User's login ID
+    // - amount: Deposit amount (positive value)
+    // - type: Operation type (3 for balance operation)
+    // - comment: Description for the transaction
+    ```
+  </Step>
+
+  <Step title="Execute the deposit">
+    ```php
+    try {
+        $apiInstance->userDepositPost($body);
+        echo "Deposit processed successfully\n";
+    } catch (Exception $e) {
+        echo 'Exception when calling UserApi->userDepositPost: ', $e->getMessage(), PHP_EOL;
+    }
+    ```
+  </Step>
+</Steps>
+
+### Complete deposit example
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$body = new \D4T\MT5Sdk\Models\BalanceType();
+// Example data: {"login": 1, "amount":1, "type": 3, "comment": "F.Management"}
+
+try {
+    $apiInstance->userDepositPost($body);
+} catch (Exception $e) {
+    echo 'Exception when calling UserApi->userDepositPost: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+
+<Note>
+Deposits are recorded in the account history and can be viewed through the deals history with deal type 2 (deposit operation).
+</Note>
+
+## Processing withdrawals
+
+The `userWithdrawPost` method removes funds from a user's account. The operation is similar to deposits but decreases the account balance.
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\UserApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$body = new \D4T\MT5Sdk\Models\BalanceType();
+// Example data: {"login": 1, "amount":1, "type": 3, "comment": "F.Management"}
+
+try {
+    $apiInstance->userWithdrawPost($body);
+} catch (Exception $e) {
+    echo 'Exception when calling UserApi->userWithdrawPost: ', $e->getMessage(), PHP_EOL;
+}
+?>
+```
+
+<Warning>
+Ensure the account has sufficient free margin before processing a withdrawal. Withdrawing funds when positions are open may trigger a margin call or stop-out.
+</Warning>
+
+## Balance operation parameters
+
+Both deposit and withdrawal operations use the `BalanceType` model:
+
+| Field | Type | Description | Required |
+|-------|------|-------------|----------|
+| `login` | int | User's login ID | Yes |
+| `amount` | float | Amount to deposit/withdraw | Yes |
+| `type` | float | Operation type (typically 3 for balance) | Yes |
+| `comment` | string | Description of the transaction | Optional |
+
+### Operation type values
+
+The `type` field indicates the nature of the balance operation:
+
+- `2`: Deposit operation (credit to account)
+- `3`: Balance operation (general adjustment)
+- `4`: Additional charges
+- `5`: Correction
+- `6`: Bonus
+- `7`: Commission
+
+<Info>
+For standard deposits and withdrawals, use type `3` (balance operation).
+</Info>
+
+## Account monitoring workflow
+
+Here's a complete example that demonstrates monitoring account health and processing balance operations:
+
+```php
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+// Configure API clients
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$accountApi = new D4T\MT5Sdk\MT5Manager\AccountApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$userApi = new D4T\MT5Sdk\MT5Manager\UserApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$login = "12345";
+
+try {
+    // 1. Check current account status
+    $account = $accountApi->accountLoginGet($login);
+    
+    echo "Account Status:\n";
+    echo "Balance: $" . $account->getBalance() . "\n";
+    echo "Equity: $" . $account->getEquity() . "\n";
+    echo "Margin: $" . $account->getMargin() . "\n";
+    echo "Free Margin: $" . $account->getMarginFree() . "\n";
+    echo "Margin Level: " . $account->getMarginLevel() . "%\n";
+    
+    // 2. Check if account needs attention
+    if ($account->getMarginLevel() < 100 && $account->getMarginLevel() > 0) {
+        echo "WARNING: Low margin level detected!\n";
+    }
+    
+    // 3. Process a deposit if needed
+    if ($account->getMarginLevel() < 150) {
+        $deposit = new \D4T\MT5Sdk\Models\BalanceType();
+        // Set deposit details...
+        
+        $userApi->userDepositPost($deposit);
+        echo "Emergency deposit processed\n";
+        
+        // 4. Verify new balance
+        $updatedAccount = $accountApi->accountLoginGet($login);
+        echo "New Balance: $" . $updatedAccount->getBalance() . "\n";
+        echo "New Margin Level: " . $updatedAccount->getMarginLevel() . "%\n";
+    }
+    
+} catch (Exception $e) {
+    echo 'Error: ' . $e->getMessage() . PHP_EOL;
+}
+?>
+```
+
+## Best practices
+
+<Accordion title="Validate account state before withdrawals">
+  Always check the account's margin level and free margin before processing withdrawals:
+
+  ```php
+  $account = $accountApi->accountLoginGet($login);
+  
+  if ($account->getMarginLevel() > 200 || $account->getMargin() == 0) {
+      // Safe to withdraw
+      $userApi->userWithdrawPost($withdrawal);
+  } else {
+      echo "Cannot withdraw: insufficient margin level\n";
+  }
+  ```
+</Accordion>
+
+<Accordion title="Use descriptive comments">
+  Always include meaningful comments in your balance operations for audit trails:
+
+  ```php
+  $deposit = new \D4T\MT5Sdk\Models\BalanceType();
+  // Good: Descriptive and traceable
+  $deposit->setComment("Wire transfer #TX123456 from Bank ABC");
+  
+  // Bad: Not informative
+  $deposit->setComment("Deposit");
+  ```
+</Accordion>
+
+<Accordion title="Monitor margin levels">
+  Set up automated monitoring for accounts with active positions:
+
+  ```php
+  function checkAccountHealth($login, $accountApi) {
+      $account = $accountApi->accountLoginGet($login);
+      $marginLevel = $account->getMarginLevel();
+      
+      if ($marginLevel < 50) {
+          // Critical: Near stop-out
+          return 'CRITICAL';
+      } elseif ($marginLevel < 100) {
+          // Warning: Low margin
+          return 'WARNING';
+      } else {
+          return 'HEALTHY';
+      }
+  }
+  ```
+</Accordion>
+
+## Error handling
+
+Implement comprehensive error handling for account operations:
+
+```php
+try {
+    $account = $accountApi->accountLoginGet($login);
+} catch (\D4T\MT5Sdk\ApiException $e) {
+    if ($e->getCode() == 404) {
+        echo "Account not found\n";
+    } elseif ($e->getCode() == 403) {
+        echo "Access denied\n";
+    } else {
+        echo "API Error: " . $e->getMessage() . "\n";
+    }
+} catch (Exception $e) {
+    echo "General Error: " . $e->getMessage() . "\n";
+}
+```
+
+## Next steps
+
+- Explore [trading operations](/guides/trading-operations) to manage positions and orders
+- Learn about [user management](/guides/user-management) for creating and managing accounts
+- Understand [groups and symbols](/guides/groups-and-symbols) configuration

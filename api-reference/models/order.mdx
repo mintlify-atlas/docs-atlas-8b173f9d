@@ -1,0 +1,62 @@
+---
+title: Order
+description: Trading order information
+---
+
+The Order model represents a trading order in the MT5 system. Orders can be market orders, pending orders, or other order types used for entering and exiting positions.
+
+## Properties
+
+<ResponseField name="symbol" type="string">
+  The trading symbol for this order (e.g., "EURUSD", "GOLD", "BTCUSD").
+</ResponseField>
+
+<ResponseField name="type" type="integer">
+  The numeric order type identifier. This indicates the kind of order (buy, sell, limit, stop, etc.).
+</ResponseField>
+
+<ResponseField name="type_str" type="string">
+  A human-readable string representation of the order type, making it easier to understand the order's purpose.
+</ResponseField>
+
+<ResponseField name="profit" type="float">
+  The current profit or loss for this order. For filled orders, this shows the realized or unrealized profit.
+</ResponseField>
+
+## Example
+
+```json
+{
+  "symbol": "EURUSD",
+  "type": 0,
+  "type_str": "Buy",
+  "profit": 125.50
+}
+```
+
+## Common order types
+
+<Expandable title="Order type reference">
+  While the exact numeric values depend on your MT5 configuration, common order types include:
+  
+  - **Market orders**: Execute immediately at current market price
+  - **Limit orders**: Execute when price reaches a specified level (better price)
+  - **Stop orders**: Execute when price reaches a specified level (worse price)
+  - **Stop Loss**: Automatically close position at a loss-limiting price
+  - **Take Profit**: Automatically close position at a profit-taking price
+</Expandable>
+
+## Working with orders
+
+```json Example pending order
+{
+  "symbol": "GOLD",
+  "type": 2,
+  "type_str": "Buy Limit",
+  "profit": 0.00
+}
+```
+
+<Note>
+  The `type_str` field provides a readable description of the order type, while `type` is the numeric identifier used internally by MT5.
+</Note>

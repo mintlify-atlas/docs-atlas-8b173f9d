@@ -1,0 +1,243 @@
+---
+title: Account API
+description: Retrieve account information and trading statistics for MetaTrader 5 users
+---
+
+The Account API provides methods for retrieving detailed account information, including balance, equity, margin, and other trading statistics for MetaTrader 5 user accounts.
+
+<Note>
+All Account API methods require authentication via Bearer token. Obtain a token using the [Basic API](/api-reference/basic-api) `initGet()` method.
+</Note>
+
+## Methods
+
+### Get account by login
+
+<CodeGroup>
+```php PHP
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+// Configure Bearer authorization
+$config = D4T\MT5Sdk\Configuration::getDefaultConfiguration()
+    ->setAccessToken('YOUR_ACCESS_TOKEN');
+
+$apiInstance = new D4T\MT5Sdk\MT5Manager\AccountApi(
+    new GuzzleHttp\Client(),
+    $config
+);
+
+$login = "12345";
+
+try {
+    $account = $apiInstance->accountLoginGet($login);
+    
+    echo "Account Information:\n";
+    echo "Login: " . $account->getLogin() . "\n";
+    echo "Balance: $" . $account->getBalance() . "\n";
+    echo "Equity: $" . $account->getEquity() . "\n";
+    echo "Margin: $" . $account->getMargin() . "\n";
+    echo "Free Margin: $" . $account->getMarginFree() . "\n";
+    echo "Margin Level: " . $account->getMarginLevel() . "%\n";
+    echo "Profit: $" . $account->getProfit() . "\n";
+    
+    print_r($account);
+} catch (Exception $e) {
+    echo 'Exception when calling AccountApi->accountLoginGet: ';
+    echo $e->getMessage(), PHP_EOL;
+}
+?>
+```
+</CodeGroup>
+
+Retrieves comprehensive account information for a specific user by their login identifier. This method returns real-time trading statistics including balance, equity, margin, and profit/loss.
+
+**HTTP Method:** `GET`
+
+**Endpoint:** `/account/{login}`
+
+**Authentication:** Required (Bearer token)
+
+#### Parameters
+
+<ParamField path="login" type="string" required>
+  The user login identifier for which to retrieve account information
+  
+  Example: `"12345"`
+</ParamField>
+
+#### Returns
+
+**Type:** `Account`
+
+Returns a comprehensive account object with all trading statistics.
+
+<ResponseField name="login" type="integer">
+  User login identifier
+</ResponseField>
+
+<ResponseField name="balance" type="float">
+  Current account balance in account currency
+  
+  This represents the total funds in the account excluding open position profits/losses.
+</ResponseField>
+
+<ResponseField name="equity" type="float">
+  Current account equity
+  
+  Calculated as: Balance + Profit/Loss from open positions
+</ResponseField>
+
+<ResponseField name="margin" type="float">
+  Used margin for open positions
+  
+  The amount of funds locked as collateral for open trades.
+</ResponseField>
+
+<ResponseField name="margin_free" type="float">
+  Free margin available for trading
+  
+  Calculated as: Equity - Margin
+</ResponseField>
+
+<ResponseField name="margin_level" type="float">
+  Margin level percentage
+  
+  Calculated as: (Equity / Margin) × 100
+  
+  Values below 100% indicate potential margin call risk.
+</ResponseField>
+
+<ResponseField name="profit" type="float">
+  Current profit/loss from all open positions
+  
+  Positive values indicate profit, negative values indicate loss.
+</ResponseField>
+
+<ResponseField name="credit" type="float">
+  Credit amount granted to the account
+</ResponseField>
+
+<ResponseField name="storage" type="float">
+  Swap (rollover) charges/credits accumulated
+</ResponseField>
+
+<ResponseField name="commission" type="float">
+  Commission charged on trades
+</ResponseField>
+
+<ResponseField name="floating" type="float">
+  Floating profit/loss
+</ResponseField>
+
+#### Error responses
+
+<ResponseField name="400" type="Bad Request">
+  Invalid login parameter or user does not exist
+</ResponseField>
+
+<ResponseField name="401" type="Unauthorized">
+  Missing or invalid authentication token
+</ResponseField>
+
+<ResponseField name="404" type="Not Found">
+  Account not found
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  Server error while retrieving account information
+</ResponseField>
+
+## Account object properties
+
+The `Account` model contains the following properties:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `login` | integer | User login identifier |
+| `balance` | float | Account balance |
+| `equity` | float | Account equity (balance + open P/L) |
+| `margin` | float | Used margin |
+| `margin_free` | float | Free margin available |
+| `margin_level` | float | Margin level percentage |
+| `profit` | float | Total profit/loss from open positions |
+| `credit` | float | Credit amount |
+| `storage` | float | Swap/rollover charges |
+| `commission` | float | Commission amounts |
+| `floating` | float | Floating P/L |
+
+## Use cases
+
+### Monitor account health
+
+```php
+$account = $apiInstance->accountLoginGet($login);
+
+if ($account->getMarginLevel() < 100) {
+    echo "WARNING: Margin level is below 100% - risk of margin call";
+}
+
+if ($account->getMarginLevel() < 50) {
+    echo "CRITICAL: Margin level is below 50% - stop-out may occur";
+}
+```
+
+### Calculate available trading power
+
+```php
+$account = $apiInstance->accountLoginGet($login);
+$freeMargin = $account->getMarginFree();
+$leverage = 100; // User's leverage
+
+$tradingPower = $freeMargin * $leverage;
+echo "Available trading power: $" . $tradingPower;
+```
+
+### Track daily performance
+
+```php
+$account = $apiInstance->accountLoginGet($login);
+$totalProfitLoss = $account->getProfit();
+$commission = $account->getCommission();
+$swap = $account->getStorage();
+
+$netProfitLoss = $totalProfitLoss - $commission - $swap;
+echo "Net P/L: $" . $netProfitLoss;
+```
+
+## Async method
+
+For non-blocking operations, use the asynchronous version:
+
+```php
+$promise = $apiInstance->accountLoginGetAsync($login);
+
+$promise->then(
+    function ($account) {
+        echo "Balance: " . $account->getBalance();
+    },
+    function ($exception) {
+        echo "Error: " . $exception->getMessage();
+    }
+);
+```
+
+The async method returns a GuzzleHttp Promise that you can chain or wait for.
+
+## Best practices
+
+1. **Real-time monitoring**: Call this method regularly to monitor account health and margin levels
+2. **Risk management**: Use margin level indicators to implement automated risk management
+3. **Performance tracking**: Compare equity and balance to track trading performance
+4. **Error handling**: Always implement proper error handling for network or authentication issues
+5. **Rate limiting**: Be mindful of API rate limits when polling account information frequently
+
+<Tip>
+For monitoring multiple accounts, consider using async methods to retrieve account information in parallel for better performance.
+</Tip>
+
+## Related APIs
+
+- [User API](/api-reference/user-api) - Create and manage user accounts
+- [Trade API](/api-reference/trade-api) - View positions, orders, and deals
+- [Basic API](/api-reference/basic-api) - Initialize connection and authenticate

@@ -1,0 +1,216 @@
+---
+title: Installation
+description: Install the MT5 Manager API SDK in your PHP project
+---
+
+## Requirements
+
+Before installing the MT5 Manager API SDK, ensure your system meets these requirements:
+
+<CardGroup cols={2}>
+  <Card title="PHP version" icon="php">
+    PHP 7.4 or higher (PHP 8.0+ supported)
+  </Card>
+  <Card title="Extensions" icon="puzzle-piece">
+    ext-curl, ext-json, ext-mbstring
+  </Card>
+</CardGroup>
+
+### System dependencies
+
+The SDK requires the following PHP extensions:
+
+- **ext-curl**: For HTTP communication with the MT5 API
+- **ext-json**: For JSON encoding and decoding
+- **ext-mbstring**: For multibyte string handling
+
+<Note>
+Most PHP installations include these extensions by default. You can verify by running `php -m` to list installed modules.
+</Note>
+
+## Installation via Composer
+
+The recommended way to install the MT5 Manager API SDK is through Composer.
+
+<Steps>
+  <Step title="Add the repository">
+    Add the SDK repository to your `composer.json` file:
+
+    ```json composer.json
+    {
+      "repositories": [
+        {
+          "type": "git",
+          "url": "https://github.com/dev4traders/mt5-manager-api.git"
+        }
+      ],
+      "require": {
+        "dev4traders/mt5-manager-api": "*@dev"
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Run Composer to install the SDK and its dependencies:
+
+    ```bash
+    composer install
+    ```
+  </Step>
+
+  <Step title="Verify installation">
+    Check that the package was installed successfully:
+
+    ```bash
+    composer show dev4traders/mt5-manager-api
+    ```
+  </Step>
+</Steps>
+
+### Alternative: Install as a dependency
+
+If you're adding the SDK to an existing project, you can use `composer require`:
+
+```bash
+composer require dev4traders/mt5-manager-api:*@dev
+```
+
+## Manual installation
+
+If you prefer not to use Composer, you can install the SDK manually.
+
+<Steps>
+  <Step title="Download the SDK">
+    Clone or download the repository from GitHub:
+
+    ```bash
+    git clone https://github.com/dev4traders/mt5-manager-api.git
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Navigate to the SDK directory and install dependencies with Composer:
+
+    ```bash
+    cd mt5-manager-api
+    composer install
+    ```
+  </Step>
+
+  <Step title="Include the autoloader">
+    Include the Composer autoloader in your PHP code:
+
+    ```php
+    <?php
+    require_once('/path/to/mt5-manager-api/vendor/autoload.php');
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+Manual installation requires you to manage the SDK path yourself. Using Composer is strongly recommended for easier updates and dependency management.
+</Warning>
+
+## Dependencies
+
+The SDK automatically installs the following dependencies via Composer:
+
+### Runtime dependencies
+
+```json
+{
+  "guzzlehttp/guzzle": "^7.3",
+  "guzzlehttp/psr7": "^1.7 || ^2.0"
+}
+```
+
+- **Guzzle HTTP client**: Handles all HTTP communication with the MT5 API
+- **PSR-7 HTTP message interfaces**: Standard HTTP message implementation
+
+### Development dependencies
+
+For SDK development and testing:
+
+```json
+{
+  "phpunit/phpunit": "^8.0 || ^9.0",
+  "friendsofphp/php-cs-fixer": "^3.5"
+}
+```
+
+## Verifying your installation
+
+After installation, verify that everything is working correctly:
+
+<CodeGroup>
+```php Basic check
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+// Check if classes are available
+if (class_exists('D4T\\MT5Sdk\\MT5Manager\\BasicApi')) {
+    echo "SDK installed successfully!\n";
+} else {
+    echo "SDK installation failed.\n";
+}
+```
+
+```php Version check
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+use D4T\MT5Sdk\Configuration;
+
+// Display SDK information
+echo Configuration::toDebugReport();
+```
+</CodeGroup>
+
+## Next steps
+
+Now that you have the SDK installed, you're ready to start building:
+
+<CardGroup cols={2}>
+  <Card title="Quickstart guide" icon="rocket" href="/quickstart">
+    Make your first API call
+  </Card>
+  <Card title="Configuration" icon="gear" href="/core-concepts/configuration">
+    Learn about SDK configuration options
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### Missing PHP extensions
+
+If you encounter errors about missing extensions:
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install php-curl php-json php-mbstring
+
+# macOS with Homebrew
+brew install php
+
+# Verify extensions are installed
+php -m | grep -E 'curl|json|mbstring'
+```
+
+### Composer authentication
+
+If the GitHub repository is private, you may need to configure Composer authentication:
+
+```bash
+composer config --global github-oauth.github.com YOUR_GITHUB_TOKEN
+```
+
+### PHP version issues
+
+Check your PHP version:
+
+```bash
+php -v
+```
+
+The SDK requires PHP 7.4 or higher. If you're running an older version, you'll need to upgrade.

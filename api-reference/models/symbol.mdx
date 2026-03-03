@@ -1,0 +1,168 @@
+---
+title: Symbol
+description: Trading symbol configuration and specifications
+---
+
+The Symbol model represents a trading instrument in the MT5 system. It contains all the specifications, trading conditions, and parameters for a particular symbol like currency pairs, commodities, indices, or cryptocurrencies.
+
+## Properties
+
+<ResponseField name="name" type="string">
+  The symbol name (e.g., "EURUSD", "GOLD", "US30", "BTCUSD"). This is the identifier used when placing trades.
+</ResponseField>
+
+<ResponseField name="path" type="string">
+  The hierarchical path or category for this symbol (e.g., "Forex\\Majors", "Metals", "Crypto").
+</ResponseField>
+
+<ResponseField name="currency_base" type="string">
+  The base currency of the symbol. For EURUSD, this would be "EUR".
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  A human-readable description of the symbol.
+</ResponseField>
+
+<ResponseField name="spread" type="float">
+  The typical or current spread for this symbol in points.
+</ResponseField>
+
+<ResponseField name="swap_mode" type="integer">
+  The swap calculation mode used for overnight positions on this symbol.
+</ResponseField>
+
+<ResponseField name="swap_long" type="float">
+  The swap (overnight interest) charged or credited for long positions. Negative values indicate a charge.
+</ResponseField>
+
+<ResponseField name="swap_short" type="float">
+  The swap (overnight interest) charged or credited for short positions. Negative values indicate a charge.
+</ResponseField>
+
+<ResponseField name="vol_min" type="integer">
+  The minimum volume (lot size) allowed for trades on this symbol.
+</ResponseField>
+
+<ResponseField name="vol_max" type="integer">
+  The maximum volume (lot size) allowed for a single trade on this symbol.
+</ResponseField>
+
+<ResponseField name="vol_limit" type="integer">
+  The maximum total volume limit across all positions for this symbol.
+</ResponseField>
+
+<ResponseField name="vol_step" type="integer">
+  The volume step size for this symbol. Orders must be in multiples of this value.
+</ResponseField>
+
+<ResponseField name="tick_value" type="float">
+  The value of one tick movement in the account currency. Used to calculate profit/loss.
+</ResponseField>
+
+<ResponseField name="tick_size" type="float">
+  The minimum price movement (tick) for this symbol.
+</ResponseField>
+
+<ResponseField name="contract_size" type="float">
+  The size of one lot for this symbol. For forex pairs, this is typically 100,000 units of the base currency.
+</ResponseField>
+
+<ResponseField name="calc_mode" type="integer">
+  The calculation mode for margin and profit/loss on this symbol.
+</ResponseField>
+
+<ResponseField name="digits" type="integer">
+  The number of decimal places for price quotes on this symbol.
+</ResponseField>
+
+<ResponseField name="trade_sessions" type="array">
+  An array of SymbolTradeSessions objects defining when the symbol is available for trading.
+</ResponseField>
+
+## Example
+
+```json EURUSD symbol
+{
+  "name": "EURUSD",
+  "path": "Forex\\Majors",
+  "currency_base": "EUR",
+  "description": "Euro vs US Dollar",
+  "spread": 10.0,
+  "swap_mode": 0,
+  "swap_long": -0.5,
+  "swap_short": -0.3,
+  "vol_min": 1000,
+  "vol_max": 10000000,
+  "vol_limit": 50000000,
+  "vol_step": 1000,
+  "tick_value": 1.0,
+  "tick_size": 0.00001,
+  "contract_size": 100000.0,
+  "calc_mode": 0,
+  "digits": 5,
+  "trade_sessions": []
+}
+```
+
+```json GOLD symbol
+{
+  "name": "GOLD",
+  "path": "Metals",
+  "currency_base": "XAU",
+  "description": "Gold vs US Dollar",
+  "spread": 30.0,
+  "swap_mode": 0,
+  "swap_long": -2.5,
+  "swap_short": -1.5,
+  "vol_min": 100,
+  "vol_max": 5000000,
+  "vol_limit": 10000000,
+  "vol_step": 100,
+  "tick_value": 1.0,
+  "tick_size": 0.01,
+  "contract_size": 100.0,
+  "calc_mode": 2,
+  "digits": 2,
+  "trade_sessions": []
+}
+```
+
+## Understanding symbol specifications
+
+<Expandable title="Volume parameters explained">
+  - **vol_min**: The smallest position you can open (e.g., 1000 = 0.01 lots)
+  - **vol_max**: The largest single position allowed (e.g., 10000000 = 100 lots)
+  - **vol_limit**: Total volume limit across all positions
+  - **vol_step**: Increments for order sizes (must be multiples of this value)
+  
+  When placing orders, ensure your volume is between min and max, and is a multiple of the step size.
+</Expandable>
+
+<Expandable title="Tick and contract size">
+  - **tick_size**: The minimum price change (0.00001 for 5-digit forex pairs)
+  - **tick_value**: What one tick is worth in account currency
+  - **contract_size**: The size of one standard lot
+  
+  These values are used to calculate:
+  - Pip value: `tick_value × (point_size / tick_size)`
+  - Position value: `volume × contract_size × price`
+</Expandable>
+
+<Expandable title="Swap charges">
+  Swap is the overnight interest charged or credited for holding positions overnight:
+  
+  - **Negative swaps**: You pay to hold the position overnight
+  - **Positive swaps**: You receive interest for holding the position
+  - **swap_long**: Applied to buy positions
+  - **swap_short**: Applied to sell positions
+  
+  The swap calculation depends on the `swap_mode` setting.
+</Expandable>
+
+<Note>
+  Symbol specifications can change. Always fetch the latest symbol data before calculating margins or planning trading strategies.
+</Note>
+
+<Tip>
+  Use the `digits` field to format prices correctly. A symbol with 5 digits should display prices like 1.08505, while a symbol with 2 digits displays as 1850.25.
+</Tip>

@@ -1,0 +1,170 @@
+---
+title: Deal
+description: Executed trade deal information
+---
+
+The Deal model represents a completed trading transaction in the MT5 system. Deals are the historical record of all trading activity, including position entries, exits, and balance operations.
+
+## Properties
+
+<ResponseField name="ticket" type="integer">
+  The unique ticket number identifying this deal. This is the primary identifier for the transaction.
+</ResponseField>
+
+<ResponseField name="entry" type="integer">
+  The deal entry type indicating how this deal affects positions.
+  
+  **Allowed values:**
+  - `0` - In market (opening a position)
+  - `1` - Out of market (closing a position)
+  - `2` - Reverse (reversing a position)
+  - `3` - Closed by hedged position
+</ResponseField>
+
+<ResponseField name="reason" type="integer">
+  The reason why this deal was executed.
+  
+  **Common values:**
+  - `0` - Deal placed manually
+  - `1` - Deal placed by expert advisor
+  - `2` - Deal placed by dealer
+  - `3` - Deal placed due to Stop Loss
+  - `4` - Deal placed due to Take Profit
+  - `16` - Deal placed manually by mobile terminal
+  - `17` - Deal placed manually by web terminal
+</ResponseField>
+
+<ResponseField name="action" type="integer">
+  The deal action type.
+  
+  **Allowed values:**
+  - `0` - Buy
+  - `1` - Sell
+  - `2` - Deposit operation
+  - `3` - Credit operation
+  - `4` - Additional charges
+  - `5` - Correction deals
+  - `6` - Bonus
+  - `7` - Commission
+</ResponseField>
+
+<ResponseField name="type" type="integer">
+  The deal type.
+  
+  **Allowed values:**
+  - `0` - Buy
+  - `1` - Sell
+  - `4` - Charge
+  - `6` - Balance
+  - `7` - Commission
+</ResponseField>
+
+<ResponseField name="type_str" type="string">
+  A human-readable string representation of the deal type.
+</ResponseField>
+
+<ResponseField name="symbol" type="string">
+  The trading symbol for this deal (e.g., "EURUSD", "GOLD"). May be empty for balance operations.
+</ResponseField>
+
+<ResponseField name="lots" type="float">
+  The volume of the deal in lots. For balance operations, this may be 0.
+</ResponseField>
+
+<ResponseField name="time" type="string">
+  The timestamp when the deal was executed. Typically in datetime string format.
+</ResponseField>
+
+<ResponseField name="price" type="float">
+  The execution price for the deal. For balance operations, this represents the amount.
+</ResponseField>
+
+<ResponseField name="comment" type="string">
+  Optional comment or description associated with the deal.
+</ResponseField>
+
+<ResponseField name="sl" type="float">
+  The Stop Loss price level associated with this deal, if any.
+</ResponseField>
+
+<ResponseField name="tp" type="float">
+  The Take Profit price level associated with this deal, if any.
+</ResponseField>
+
+<ResponseField name="pl" type="float">
+  The profit or loss resulting from this deal. Positive values indicate profit.
+</ResponseField>
+
+<ResponseField name="commission" type="float">
+  The commission charged for this deal.
+</ResponseField>
+
+<ResponseField name="swap" type="float">
+  The swap (overnight interest) charged or credited for this deal.
+</ResponseField>
+
+## Example
+
+```json Trading deal
+{
+  "ticket": 123456789,
+  "entry": 0,
+  "reason": 0,
+  "action": 0,
+  "type": 0,
+  "type_str": "Buy",
+  "symbol": "EURUSD",
+  "lots": 1.0,
+  "time": "2024-01-15T14:30:00Z",
+  "price": 1.0850,
+  "comment": "Manual trade",
+  "sl": 1.0800,
+  "tp": 1.0900,
+  "pl": 50.00,
+  "commission": -7.00,
+  "swap": 0.00
+}
+```
+
+```json Balance operation
+{
+  "ticket": 123456790,
+  "entry": 0,
+  "reason": 0,
+  "action": 2,
+  "type": 6,
+  "type_str": "Balance",
+  "symbol": "",
+  "lots": 0.0,
+  "time": "2024-01-15T10:00:00Z",
+  "price": 10000.00,
+  "comment": "Initial deposit",
+  "sl": 0.0,
+  "tp": 0.0,
+  "pl": 0.00,
+  "commission": 0.00,
+  "swap": 0.00
+}
+```
+
+## Deal types explained
+
+<Expandable title="Understanding entry types">
+  - **In market (0)**: Opening a new position or adding to an existing one
+  - **Out of market (1)**: Closing a position or reducing its size
+  - **Reverse (2)**: Closing current position and opening opposite position
+  - **Closed by (3)**: Position closed by an opposite hedging position
+</Expandable>
+
+<Expandable title="Understanding deal reasons">
+  The `reason` field helps you understand why a trade was executed:
+  
+  - Manual trades (0, 16, 17) - Trader initiated
+  - Expert advisor (1) - Automated trading system
+  - Stop Loss/Take Profit (3, 4) - Risk management triggered
+  - Dealer (2) - Broker intervention
+</Expandable>
+
+<Note>
+  Deals are immutable historical records. Once created, they cannot be modified. They serve as the audit trail for all account activity.
+</Note>
